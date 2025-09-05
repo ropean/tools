@@ -1,0 +1,37 @@
+name: Deploy to FTP
+
+on:
+  push:
+    branches: [main]
+  # Optional: enable manual triggers
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          # server: ${{ secrets.FTP_SERVER }}
+          server: ftp://ip.us.aceapp.dev:21
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./ # Local directory to upload
+          server-dir: ./ # Remote directory on FTP server
+          # Optional: exclude files/folders
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            **/.env*
+            README.md
+            .github/
+          # Optional: include only specific files
+          # include: "*.html,*.css,*.js,*.json"
+          # Optional: set to true for dangerous clean deployments
+          dangerous-clean-slate: false

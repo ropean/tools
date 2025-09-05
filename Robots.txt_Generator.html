@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Robots.txt Rule Generator</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script>
+        function addRule() {
+            var user_agent = document.getElementById('user_agent').value;
+            var directive = document.getElementById('directive').value;
+            var value = document.getElementById('value').value;
+            var rule = user_agent + " " + directive + " " + value;
+            var currentContent = document.getElementById('content').value;
+            var newContent = currentContent + rule + "\n";
+            document.getElementById('content').value = newContent;
+        }
+
+        function copyContent() {
+            var content = document.getElementById('content');
+            content.select();
+            document.execCommand('copy');
+            alert('Content copied to clipboard');
+        }
+    </script>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1>Robots.txt Rule Generator</h1>
+        <div class="form-group">
+            <label for="user_agent">User Agent:</label>
+            <input type="text" class="form-control" id="user_agent">
+        </div>
+        <div class="form-group">
+            <label for="directive">Directive:</label>
+            <select class="form-control" id="directive">
+                <option value="Disallow">Disallow</option>
+                <option value="Allow">Allow</option>
+                <option value="Crawl-delay">Crawl-delay</option>
+                <option value="Sitemap">Sitemap</option>
+                <!-- Add other directives here -->
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="value">Value:</label>
+            <input type="text" class="form-control" id="value">
+        </div>
+        <button type="button" class="btn btn-primary" onclick="addRule()">Add</button>
+        <div class="mt-4">
+            <h2>Generated Content:</h2>
+            <textarea id="content" class="form-control" rows="10"></textarea>
+            <button type="button" class="btn btn-secondary mt-2" onclick="copyContent()">Copy Content</button>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>zip命令参数及释义</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        body {
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="mt-4">zip命令参数及释义</h1>
+        <ul class="list-group mt-3">
+            <li class="list-group-item"><code>zip -r &lt;压缩文件名.zip&gt; &lt;目标文件或目录&gt;</code> : 将指定的文件或目录压缩为一个zip文件（递归压缩子目录）。</li>
+            <li class="list-group-item"><code>zip -u &lt;压缩文件名.zip&gt; &lt;文件&gt;</code> : 更新已存在的zip文件，添加或更新指定的文件。</li>
+            <li class="list-group-item"><code>zip -d &lt;压缩文件名.zip&gt; &lt;文件&gt;</code> : 从zip文件中删除指定的文件。</li>
+            <li class="list-group-item"><code>zip -l &lt;压缩文件名.zip&gt;</code> : 列出zip文件中的文件列表，显示文件名、压缩比率等信息。</li>
+            <li class="list-group-item"><code>zip -e &lt;压缩文件名.zip&gt; &lt;文件&gt;</code> : 使用密码加密压缩文件，需要输入密码来解压文件。</li>
+            <li class="list-group-item"><code>zip -x &lt;压缩文件名.zip&gt; &lt;排除文件或目录&gt;</code> : 创建zip文件时排除指定的文件或目录。</li>
+            <li class="list-group-item"><code>zip -q &lt;压缩文件名.zip&gt; &lt;文件或目录&gt;</code> : 安静模式，不显示压缩进程的输出。</li>
+            <li class="list-group-item"><code>zip -m &lt;压缩文件名.zip&gt; &lt;文件或目录&gt;</code> : 将指定的文件或目录添加到zip文件后，然后删除原文件。</li>
+            <li class="list-group-item"><code>zip -T &lt;压缩文件名.zip&gt;</code> : 测试zip文件的完整性。</li>
+            <li class="list-group-item"><code>zip -c &lt;压缩文件名.zip&gt; &lt;文件列表&gt;</code> : 创建一个只包含指定文件的zip文件。</li>
+            <li class="list-group-item"><code>zip -rj &lt;压缩文件名.zip&gt; &lt;目标文件或目录&gt;</code> : 将指定的文件或目录压缩为一个zip文件，不包含目录结构。</li>
+            <li class="list-group-item"><code>zip -0 &lt;压缩文件名.zip&gt; &lt;文件列表&gt;</code> : 使用存储模式压缩，不进行压缩，仅存储文件。</li>
+            <li class="list-group-item"><code>zip -v &lt;压缩文件名.zip&gt;</code> : 显示压缩过程的详细输出。</li>
+            <li class="list-group-item"><code>zip -F &lt;压缩文件名.zip&gt;</code> : 修复损坏的zip文件。</li>
+            <li class="list-group-item"><code>zip -r9 &lt;压缩文件名.zip&gt; &lt;目标文件或目录&gt;</code> : 最大压缩级别，压缩比最高。</li>
+        </ul>
+    </div>
+</body>
+</html>

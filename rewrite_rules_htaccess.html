@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>.htaccess 生成工具</title>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+
+    <!-- Bootstrap JS and jQuery -->
+    <!-- <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script> -->
+</head>
+
+<body>
+    <div class="container mt-5">
+        <h1>.htaccess 生成工具</h1>
+        <form id="htaccessForm">
+            <div class="form-group row">
+                <label for="domainInput" class="col-sm-1 col-form-label">网址:</label>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" id="domainInput" placeholder="tobemvp.com"
+                        value="tobemvp.com" required>
+                </div>
+            </div>
+            <div class="btn-group" data-toggle="buttons">
+                <label class="btn btn-secondary active">
+                    <input type="radio" name="redirectOption" id="wwwToNonWWWRadio" autocomplete="off" checked> 重定向 www
+                    到非 www
+                </label>
+                <label class="btn btn-secondary">
+                    <input type="radio" name="redirectOption" id="nonWWWToWWWRadio" autocomplete="off"> 重定向非 www 到 www
+                </label>
+            </div>
+            <div class="form-check mt-3">
+                <input type="checkbox" class="form-check-input" id="httpToHttpsCheckbox" checked>
+                <label class="form-check-label" for="httpToHttpsCheckbox">重定向 http 到 https</label>
+            </div>
+            <div class="form-check mt-3">
+                <input type="checkbox" class="form-check-input" id="removePort" checked>
+                <label class="form-check-label" for="removePort">从网址里去掉端口号</label>
+            </div>
+            <div class="btn-group" data-toggle="buttons">
+                <button type="button" class="btn btn-primary mt-3" id="generateApache">生成Apache规则</button>
+                <button type="button" class="btn btn-info mt-3" id="generateNginx">生成Nginx规则</button>
+            </div>
+        </form>
+        <div class="mt-4">
+            <h2>生成的规则：</h2>
+            <pre id="htaccessOutput" class="form-control" style="height: auto; margin-top: 20px;"></pre>
+        </div>
+    </div>
+
+    <script>
+        function extractDomainFromURL(url) {
+            const regex = /^(?:https?:\/\/)?(?:www\.)?([^\/]+)/i;
+            const matches = url.match(regex);
+
+            if (matches && matches.length >= 2) {
+                return matches[1];
+            }
+
+            return null;
+        }
+
+        function removePortFromURL(url) {
+            const regex = /:\d+/;
+            return url.replace(regex, '');
+        }
+
+        function generateRules(server) {
+            const domainInput = document.getElementById("domainInput").value;
+            const wwwToNonWWW = document.getElementById("wwwToNonWWWRadio").checked;
+            const nonWWWToWWW = document.getElementById("nonWWWToWWWRadio").checked;
+            const removePort = document.getElementById("removePort").checked;
+            const httpToHttpsCheckbox = document.getElementById("httpToHttpsCheckbox").checked;
+
+            var domainWithoutWWW = extractDomainFromURL(domainInput);
+
+            if (removePort) {
+                domainWithoutWWW = removePortFromURL(domainWithoutWWW);
+            }
+
+            const domainWithWWW = `www.${domainWithoutWWW}`;
+            var targetWWW = (wwwToNonWWW ? domainWithoutWWW : domainWithWWW);
+            
+            switch (server) {
+                case "Apache":
+                    targetWWW += "/";
+                    break;
+                case "Nginx":
+                    
+                    break;
+            }
+            
+            let rules = [];
+
+            if (httpToHttpsCheckbox) {
+                switch (server) {
+                    case "Apache":
+                        rules.push(`RewriteEngine On`);
+                        rules.push(`RewriteCond %{HTTPS} off`);
+                        rules.push(`RewriteRule ^(.*)$ https://${targetWWW}%{REQUEST_URI} [L,R=301]`);
+                        break;
+                    case "Nginx":
+                        rules.push(`if ($server_port = 80) {`);
+                        rules.push(`  rewrite ^(.*)$ https://${targetWWW}$uri permanent;`);
+                        rules.push(`}`);
+                        break;
+                }
+                rules.push(``);
+            }
+
+            if (wwwToNonWWW) {
+                switch (server) {
+                    case "Apache":
+                        rules.push(`RewriteEngine On`);
+                        rules.push(`RewriteCond %{HTTP_HOST} ^${domainWithWWW.replace(/\./g, '\\.')}$ [NC]`);
+                        rules.push(`RewriteRule ^(.*)$ https://${targetWWW}$1 [R=301,L]`);
+                        break;
+                    case "Nginx":
+                        rules.push(`if ($host ~* ^${domainWithWWW.replace(/\./g, '\\.')}$){`);
+                        rules.push(`  rewrite ^(.*)$ https://${targetWWW}$uri permanent;`);
+                        rules.push(`}`);
+                        break;
+                }
+
+                rules.push(``);
+            }
+
+            if (nonWWWToWWW) {
+                switch (server) {
+                    case "Apache":
+                        rules.push(`RewriteEngine On`);
+                        rules.push(`RewriteCond %{HTTP_HOST} ^${domainWithoutWWW.replace(/\./g, '\\.')}$ [NC]`);
+                        rules.push(`RewriteRule ^(.*)$ https://${targetWWW}$1 [R=301,L]`);
+                        break;
+                    case "Nginx":
+                        rules.push(`if ($host ~* ^${domainWithoutWWW.replace(/\./g, '\\.')}$){`);
+                        rules.push(`  rewrite ^(.*)$ https://${targetWWW}$uri permanent;`);
+                        rules.push(`}`);
+                        break;
+                }
+
+                rules.push(``);
+            }
+
+            rules.push(`# Other rules`);
+            rules.push(``);
+
+            const htaccessOutput = document.getElementById("htaccessOutput");
+            htaccessOutput.textContent = rules.join("\n");
+        }
+
+        document.getElementById("generateApache").addEventListener("click", function () {
+            generateRules("Apache");
+        });
+
+        document.getElementById("generateNginx").addEventListener("click", function () {
+            generateRules("Nginx");
+        });
+
+        document.getElementById("generateApache").click();
+    </script>
+</body>
+
+</html>
