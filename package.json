@@ -1,0 +1,22 @@
+{
+  "name": "tools.aceapp.dev",
+  "version": "1.0.0",
+  "description": "",
+  "homepage": "https://github.com/ropean/tools.aceapp.dev#readme",
+  "bugs": {
+    "url": "https://github.com/ropean/tools.aceapp.dev/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ropean/tools.aceapp.dev.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "deploy": "wrangler pages deploy ./public --project-name=tools --branch=main",
+    "deploy:ci": "wrangler pages deploy ./public --project-name=tools-ci --branch=ci"
+  }
+}
