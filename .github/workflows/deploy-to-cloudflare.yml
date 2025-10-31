@@ -39,8 +39,13 @@ jobs:
         with:
           node-version: '22'
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
       - name: Install Wrangler
-        run: npm install -g wrangler
+        run: pnpm install -g wrangler
 
       - name: Determine environment
         id: env
@@ -76,6 +81,11 @@ jobs:
 
       - name: Deployment summary
         run: |
-          echo "🚀 Deployment completed!"
-          echo "🔧 Environment: ${{ steps.env.outputs.environment }}"
-          echo "🌐 Domain: ${{ steps.project.outputs.domain }}"
+          cat << EOF >> $GITHUB_STEP_SUMMARY
+          ## ✅ Website Deployed
+
+          - 🚀 Deployment completed!
+          - 🔧 Environment: ${{ steps.env.outputs.environment }}
+          - 🌿 Branch: ${{ github.ref_name }}
+          - 🌐 Domain: https://${{ steps.project.outputs.domain }}
+          EOF
