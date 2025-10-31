@@ -17,14 +17,6 @@ on:
         options:
           - ci
           - release
-      enable_service_worker:
-        description: 'Service worker'
-        required: false
-        default: 'false'
-        type: choice
-        options:
-          - 'true'
-          - 'false'
 
 permissions:
   contents: read
