@@ -70,7 +70,7 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           projectName: ${{ steps.project.outputs.project }}
-          directory: ./dist
+          directory: ./
           # (Remove token):
           # No deployment record will be created on GitHub
           # But the deployment will still succeed
