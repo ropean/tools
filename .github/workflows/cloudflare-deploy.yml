@@ -1,0 +1,84 @@
+name: Deploy to Cloudflare
+
+on:
+  push:
+    branches:
+      - ci
+      - ci*
+      - release
+      - release*
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment'
+        required: true
+        default: 'ci'
+        type: choice
+        options:
+          - ci
+          - release
+      enable_service_worker:
+        description: 'Service worker'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+permissions:
+  contents: read
+  deployments: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event_name == 'push' && (startsWith(github.ref_name, 'ci') && 'ci' || 'release') || inputs.environment }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Determine environment
+        id: env
+        run: |
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            if [[ "${{ github.ref_name }}" == ci* ]]; then
+              echo "environment=ci" >> $GITHUB_OUTPUT
+            else
+              echo "environment=release" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "environment=${{ inputs.environment }}" >> $GITHUB_OUTPUT
+          fi
+
+      # Determine Cloudflare project name
+      - name: Determine Cloudflare project name
+        id: project
+        run: |
+          if [[ "${{ steps.env.outputs.environment }}" == "ci"* ]] || [[ "${{ steps.env.outputs.environment }}" == "ci" ]]; then
+            echo "project=tools-ci.aceapp.dev" >> $GITHUB_OUTPUT
+            echo "domain=tools-ci.aceapp.dev" >> $GITHUB_OUTPUT
+          else
+            echo "project=tools.aceapp.dev" >> $GITHUB_OUTPUT
+            echo "domain=tools.aceapp.dev" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: ${{ steps.project.outputs.project }}
+          directory: ./dist
+          # (Remove token):
+          # No deployment record will be created on GitHub
+          # But the deployment will still succeed
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref_name }}
+
+      - name: Deployment summary
+        run: |
+          echo "🚀 Deployment completed!"
+          echo "🔧 Environment: ${{ steps.env.outputs.environment }}"
+          echo "🌐 Domain: ${{ steps.project.outputs.domain }}"
