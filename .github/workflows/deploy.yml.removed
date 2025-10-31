@@ -2,7 +2,7 @@ name: Deploy to FTP
 
 on:
   push:
-    branches: [main]
+    branches: [release, release*]
   # Optional: enable manual triggers
   workflow_dispatch:
 
