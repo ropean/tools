@@ -28,7 +28,9 @@ on:
 
 permissions:
   contents: read
-  deployments: write
+  # contents: write
+  # pages: write
+  # id-token: write
 
 jobs:
   deploy:
@@ -71,10 +73,7 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           projectName: ${{ steps.project.outputs.project }}
           directory: ./
-          # (Remove token):
-          # No deployment record will be created on GitHub
-          # But the deployment will still succeed
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          gitHubToken: '' # disable github pages
           branch: ${{ github.ref_name }}
 
       - name: Deployment summary
