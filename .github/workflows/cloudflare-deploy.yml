@@ -20,6 +20,7 @@ on:
 
 permissions:
   contents: read
+  # deployments: write
   # contents: write
   # pages: write
   # id-token: write
@@ -65,7 +66,6 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           projectName: ${{ steps.project.outputs.project }}
           directory: ./
-          gitHubToken: '' # disable github pages
           branch: ${{ github.ref_name }}
 
       - name: Deployment summary
