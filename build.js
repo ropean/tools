@@ -195,7 +195,8 @@ function generateIndexPage(tools, outputDir) {
     <div class="tools-grid" id="tools-grid">
       ${toolsCards}
     </div>
-  `).replace('{% if title %}{{ title }} - {% endif %}', 'AceApp 工具合集 - ');
+  `).replace('{% if title %}{{ title }} - {% endif %}AceApp 工具合集', 'AceApp 工具合集')
+    .replace('{{ "now" | date("YYYY") }}', new Date().getFullYear().toString());
   
   // 写入文件
   fs.writeFileSync(path.join(outputDir, 'index.html'), html);
