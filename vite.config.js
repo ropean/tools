@@ -1,23 +1,9 @@
-import { defineConfig } from 'vite'
+import { defineConfig } from "vite";
 
 export default defineConfig({
-  preview: {
-    port: 8080,
-    host: true,
-    open: true
-  },
+  root: "_site",
   server: {
     port: 8080,
     host: true,
-    open: true
   },
-  build: {
-    outDir: '_site',
-    emptyOutDir: false,
-    rollupOptions: {
-      input: {
-        main: './_site/index.html'
-      }
-    }
-  }
-})
+});

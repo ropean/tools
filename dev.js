@@ -11,8 +11,8 @@ generateSite();
 
 // 监听文件变化
 const watcher = chokidar.watch([
-  'src/**/*',
-  'public/**/*.html',
+  'src',
+  'public',
   'build.js'
 ], {
   ignored: /node_modules/,
@@ -21,18 +21,6 @@ const watcher = chokidar.watch([
 
 watcher.on('change', (filePath) => {
   console.log(`File changed: ${filePath}`);
-  console.log('Rebuilding...');
-  
-  try {
-    generateSite();
-    console.log('✅ Rebuild complete!');
-  } catch (error) {
-    console.error('❌ Rebuild failed:', error.message);
-  }
-});
-
-watcher.on('add', (filePath) => {
-  console.log(`File added: ${filePath}`);
   console.log('Rebuilding...');
   
   try {
