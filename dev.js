@@ -10,19 +10,15 @@ console.log('Starting development server with hot reload...');
 generateSite();
 
 // 监听文件变化
-const watcher = chokidar.watch([
-  'src',
-  'public',
-  'build.js'
-], {
+const watcher = chokidar.watch(['src', 'public', 'build.js'], {
   ignored: /node_modules/,
-  persistent: true
+  persistent: true,
 });
 
 watcher.on('change', (filePath) => {
   console.log(`File changed: ${filePath}`);
   console.log('Rebuilding...');
-  
+
   try {
     generateSite();
     console.log('✅ Rebuild complete!');
@@ -40,61 +36,71 @@ function generateSite() {
   const srcDir = path.join(__dirname, 'src');
   const publicDir = path.join(__dirname, 'public');
   const outputDir = path.join(__dirname, '_site');
-  
+
   console.log('Source directory:', srcDir);
   console.log('Public directory:', publicDir);
   console.log('Output directory:', outputDir);
-  
+
   // 创建输出目录
   if (!fs.existsSync(outputDir)) {
     console.log('Creating output directory...');
     fs.mkdirSync(outputDir, { recursive: true });
   }
-  
+
   // 收集工具数据
   console.log('Collecting tools...');
   const tools = collectTools(publicDir);
   console.log(`Found ${tools.length} tools`);
-  
+
   // 生成主页面
   console.log('Generating index page...');
   generateIndexPage(tools, outputDir);
-  
+
   // 复制 public 目录内容（除了 index.html）
   console.log('Copying public files...');
   copyPublicFiles(publicDir, outputDir, ['index.html']);
-  
+
   console.log('Site generated successfully!');
   console.log(`Tools found: ${tools.length}`);
-  console.log(`Categories: ${[...new Set(tools.map(t => t.category))].join(', ')}`);
+  console.log(
+    `Categories: ${[...new Set(tools.map((t) => t.category))].join(', ')}`,
+  );
 }
 
 function collectTools(publicDir) {
   const tools = [];
-  const files = fs.readdirSync(publicDir).filter(file => file.endsWith('.html'));
-  
-  files.forEach(file => {
+  const files = fs
+    .readdirSync(publicDir)
+    .filter((file) => file.endsWith('.html'));
+
+  files.forEach((file) => {
     const filePath = path.join(publicDir, file);
     const content = fs.readFileSync(filePath, 'utf8');
-    
+
     // 提取标题
     const titleMatch = content.match(/<title>(.*?)<\/title>/i);
     const title = titleMatch ? titleMatch[1].replace(/\s+/g, ' ').trim() : file;
-    
+
     // 提取描述
-    const descMatch = content.match(/<meta[^>]*name=["']description["'][^>]*content=["'](.*?)["'][^>]*>/i);
+    const descMatch = content.match(
+      /<meta[^>]*name=["']description["'][^>]*content=["'](.*?)["'][^>]*>/i,
+    );
     const description = descMatch ? descMatch[1] : '';
-    
+
     // 获取文件信息
     const stats = fs.statSync(filePath);
-    
+
     // 分类逻辑
     let category = '其他';
     const fileName = file.toLowerCase();
-    
+
     if (fileName.includes('color') || fileName.includes('schema')) {
       category = '颜色工具';
-    } else if (fileName.includes('password') || fileName.includes('random') || fileName.includes('string')) {
+    } else if (
+      fileName.includes('password') ||
+      fileName.includes('random') ||
+      fileName.includes('string')
+    ) {
       category = '生成器';
     } else if (fileName.includes('html') || fileName.includes('format')) {
       category = '格式化工具';
@@ -103,17 +109,18 @@ function collectTools(publicDir) {
     } else if (fileName.includes('zip') || fileName.includes('command')) {
       category = '命令行工具';
     }
-    
+
     // 标签逻辑
     const tags = [];
     if (fileName.includes('generator')) tags.push('生成器');
     if (fileName.includes('format')) tags.push('格式化');
-    if (fileName.includes('cn') || fileName.includes('chinese')) tags.push('中文');
+    if (fileName.includes('cn') || fileName.includes('chinese'))
+      tags.push('中文');
     if (fileName.includes('random')) tags.push('随机');
     if (fileName.includes('password')) tags.push('密码');
     if (fileName.includes('color')) tags.push('颜色');
     if (fileName.includes('web')) tags.push('Web');
-    
+
     tools.push({
       title,
       description,
@@ -123,27 +130,33 @@ function collectTools(publicDir) {
       tags,
       size: stats.size,
       modified: stats.mtime,
-      featured: ['index.html', 'password-generator.html', 'color.html'].includes(file)
+      featured: [
+        'index.html',
+        'password-generator.html',
+        'color.html',
+      ].includes(file),
     });
   });
-  
+
   return tools.sort((a, b) => new Date(b.modified) - new Date(a.modified));
 }
 
 function generateIndexPage(tools, outputDir) {
   const templatePath = path.join(__dirname, 'src', '_layouts', 'base.njk');
   console.log('Reading template from:', templatePath);
-  
+
   if (!fs.existsSync(templatePath)) {
     console.error('Template file not found:', templatePath);
     throw new Error('Template file not found');
   }
-  
+
   const template = fs.readFileSync(templatePath, 'utf8');
   console.log('Template loaded, length:', template.length);
-  
+
   // 生成工具卡片 HTML
-  const toolsCards = tools.map(tool => `
+  const toolsCards = tools
+    .map(
+      (tool) => `
     <div class="tool-card ${tool.featured ? 'featured' : ''}">
       ${tool.featured ? '<span class="featured-badge">精选</span>' : ''}
       <div class="tool-content">
@@ -153,32 +166,41 @@ function generateIndexPage(tools, outputDir) {
           <span class="tool-category">${tool.category}</span>
           <span>${(tool.size / 1024).toFixed(1)} KB</span>
         </div>
-        ${tool.tags.length > 0 ? `
+        ${
+          tool.tags.length > 0
+            ? `
           <div class="tool-tags">
-            ${tool.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+            ${tool.tags.map((tag) => `<span class="tag">${tag}</span>`).join('')}
           </div>
-        ` : ''}
+        `
+            : ''
+        }
       </div>
       <a href="${tool.url}" class="tool-link">使用工具</a>
     </div>
-  `).join('');
-  
+  `,
+    )
+    .join('');
+
   // 生成分类选项
-  const categories = [...new Set(tools.map(t => t.category))].sort();
+  const categories = [...new Set(tools.map((t) => t.category))].sort();
   const categoryOptions = ['<option value="全部">全部</option>'];
-  categories.forEach(cat => {
+  categories.forEach((cat) => {
     categoryOptions.push(`<option value="${cat}">${cat}</option>`);
   });
-  
+
   // 生成标签选项
-  const allTags = [...new Set(tools.flatMap(t => t.tags))].sort();
+  const allTags = [...new Set(tools.flatMap((t) => t.tags))].sort();
   const tagOptions = ['<option value="全部">全部</option>'];
-  allTags.forEach(tag => {
+  allTags.forEach((tag) => {
     tagOptions.push(`<option value="${tag}">${tag}</option>`);
   });
-  
+
   // 替换模板中的占位符
-  let html = template.replace('{% block content %}{% endblock %}', `
+  let html = template
+    .replace(
+      '{% block content %}{% endblock %}',
+      `
     <div class="search-section">
       <div class="search-box">
         <input type="text" id="search" class="search-input" placeholder="搜索工具名称、描述或标签...">
@@ -215,7 +237,7 @@ function generateIndexPage(tools, outputDir) {
           <div class="stat-label">标签数量</div>
         </div>
         <div class="stat-item">
-          <div class="stat-number">${tools.filter(t => t.featured).length}</div>
+          <div class="stat-number">${tools.filter((t) => t.featured).length}</div>
           <div class="stat-label">精选工具</div>
         </div>
       </div>
@@ -224,8 +246,10 @@ function generateIndexPage(tools, outputDir) {
     <div class="tools-grid" id="tools-grid">
       ${toolsCards}
     </div>
-  `).replace('{% if title %}{{ title }} - {% endif %}', 'AceApp 工具合集 - ');
-  
+  `,
+    )
+    .replace('{% if title %}{{ title }} - {% endif %}', 'AceApp 工具合集 - ');
+
   // 写入文件
   fs.writeFileSync(path.join(outputDir, 'index.html'), html);
 }
@@ -235,12 +259,12 @@ function copyPublicFiles(publicDir, outputDir, excludeFiles = []) {
     if (!fs.existsSync(dest)) {
       fs.mkdirSync(dest, { recursive: true });
     }
-    
+
     const items = fs.readdirSync(src);
-    items.forEach(item => {
+    items.forEach((item) => {
       const srcPath = path.join(src, item);
       const destPath = path.join(dest, item);
-      
+
       if (fs.statSync(srcPath).isDirectory()) {
         copyDir(srcPath, destPath);
       } else if (!excludeFiles.includes(item)) {
@@ -248,6 +272,6 @@ function copyPublicFiles(publicDir, outputDir, excludeFiles = []) {
       }
     });
   };
-  
+
   copyDir(publicDir, outputDir);
 }

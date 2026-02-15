@@ -1,7 +1,7 @@
-import { defineConfig } from "vite";
+import { defineConfig } from 'vite';
 
 export default defineConfig({
-  root: "_site",
+  root: '_site',
   server: {
     port: 8080,
     host: true,
