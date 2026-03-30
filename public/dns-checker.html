@@ -81,6 +81,7 @@
   .retry-btn:hover { border-color: #4a90e2; color: #4a90e2; }
   .retry-btn:disabled { opacity: 0.3; cursor: default; }
 
+  .s0   { color: #ccc; }
   .s2xx { color: #27ae60; }
   .s208 { color: #0891b2; }
   .s3xx { color: #e67e22; }
@@ -406,10 +407,19 @@
     buildFilters();
 
     hosts.forEach((_, i) => {
-      rowMeta[i].code = null;
       rowMeta[i].marked = false;
       document.getElementById(`mk-${i}`).classList.remove('marked');
       document.getElementById(`row-${i}`).classList.remove('hidden');
+      const checked = document.getElementById(`cb-${i}`).checked;
+      if (checked) {
+        rowMeta[i].code = null;
+      } else {
+        rowMeta[i].code = '0';
+        const el = document.getElementById(`st-${i}`);
+        el.className = 'status s0';
+        el.textContent = '0';
+        document.getElementById(`rt-${i}`).disabled = false;
+      }
     });
 
     let done = 0;
@@ -419,6 +429,7 @@
     async function worker() {
       while (idx < hosts.length) {
         const i = idx++;
+        if (!document.getElementById(`cb-${i}`).checked) continue;
         await runCheck(hosts[i], i);
         done++;
         progress.textContent = `${done} / ${hosts.length}`;
