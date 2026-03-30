@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DNS URL Checker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: inherit; }
+  body { font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; color: #222; padding: 24px; }
+  h1 { font-size: 1.2rem; font-weight: 600; margin-bottom: 4px; }
+  .subtitle { font-size: 0.8rem; color: #888; margin-bottom: 20px; }
+
+  .upload-area {
+    border: 2px dashed #ccc; border-radius: 8px; padding: 32px;
+    text-align: center; cursor: pointer; background: #fff;
+    transition: border-color 0.2s; margin-bottom: 16px;
+  }
+  .upload-area:hover, .upload-area.drag-over { border-color: #4a90e2; background: #f0f7ff; }
+  .upload-area input[type=file] { display: none; }
+  .upload-label { font-size: 0.95rem; color: #555; cursor: pointer; }
+  .upload-label span { color: #4a90e2; text-decoration: underline; }
+
+  .actions { display: flex; gap: 8px; margin-bottom: 16px; align-items: center; }
+  button { padding: 7px 18px; border: none; border-radius: 5px; cursor: pointer; font-size: 0.85rem; font-weight: 500; }
+  #startBtn { background: #4a90e2; color: #fff; }
+  #startBtn:hover { background: #3a7ed8; }
+  #startBtn:disabled { background: #aac8f0; cursor: default; }
+  #clearBtn { background: #eee; color: #555; }
+  #clearBtn:hover { background: #e0e0e0; }
+  .progress { font-size: 0.8rem; color: #888; margin-left: auto; }
+
+  .notice { font-size: 0.75rem; color: #aaa; margin-bottom: 10px; }
+  .notice a { color: #aaa; }
+
+  /* ── Filter bar ── */
+  .filter-bar { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; min-height: 0; }
+  .filter-bar:empty { margin-bottom: 0; }
+  .fpill {
+    font-size: 0.75rem; font-weight: 500;
+    padding: 3px 10px; border-radius: 20px; border: 1.5px solid currentColor;
+    cursor: pointer; background: transparent; transition: background 0.15s, color 0.15s;
+    opacity: 0.55;
+  }
+  .fpill.active { opacity: 1; background: currentColor; }
+  .fpill.active span { color: #fff; }
+  .fpill span { display: inline; }
+  .fpill-all { color: #888; }
+  .fpill-2xx { color: #27ae60; }
+  .fpill-208 { color: #0891b2; }
+  .fpill-3xx { color: #e67e22; }
+  .fpill-4xx { color: #e74c3c; }
+  .fpill-5xx { color: #c0392b; }
+  .fpill-err { color: #bbb; }
+
+  /* ── Table ── */
+  table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  table, td, th { font-family: inherit; }
+  thead th { background: #f9f9f9; font-size: 0.72rem; font-weight: 600; color: #999; text-transform: uppercase; letter-spacing: 0.05em; padding: 10px 14px; text-align: left; border-bottom: 1px solid #eee; }
+  th.cb-col, td.cb-col { width: 36px; text-align: center; padding-left: 10px; padding-right: 4px; }
+  input[type=checkbox] { width: 15px; height: 15px; cursor: pointer; accent-color: #4a90e2; }
+  tbody tr { border-bottom: 1px solid #f0f0f0; transition: opacity 0.15s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr.unchecked { opacity: 0.35; }
+  tbody tr.hidden { display: none; }
+  td { padding: 9px 14px; font-size: 0.85rem; }
+  td.host { font-size: 0.8rem; word-break: break-all; }
+  td.status { font-weight: 600; font-size: 0.85rem; white-space: nowrap; }
+  td.mark-col, td.retry-col { width: 56px; text-align: center; padding: 6px 6px; }
+
+  .mark-btn, .retry-btn {
+    font-size: 0.72rem; font-weight: 500;
+    padding: 2px 8px; border-radius: 4px; border: 1.5px solid #ddd;
+    background: transparent; cursor: pointer; transition: all 0.15s;
+  }
+  .mark-btn { color: #bbb; }
+  .mark-btn:hover:not(:disabled) { border-color: #0891b2; color: #0891b2; }
+  .mark-btn.marked { border-color: #0891b2; background: #e0f7fa; color: #0891b2; }
+  .retry-btn { color: #aaa; font-size: 0.9rem; padding: 1px 7px; }
+  .retry-btn:hover { border-color: #4a90e2; color: #4a90e2; }
+  .retry-btn:disabled { opacity: 0.3; cursor: default; }
+
+  .s2xx { color: #27ae60; }
+  .s208 { color: #0891b2; }
+  .s3xx { color: #e67e22; }
+  .s4xx { color: #e74c3c; }
+  .s5xx { color: #c0392b; }
+  .serr { color: #bbb; }
+  .pending { color: #bbb; }
+  .spinner {
+    display: inline-block; width: 11px; height: 11px;
+    border: 2px solid #ddd; border-top-color: #4a90e2;
+    border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<h1>DNS URL Checker</h1>
+<p class="subtitle">上传 DNS 记录文件，逐一检查各主机的 HTTPS 状态码</p>
+
+<div class="upload-area" id="dropZone">
+  <label class="upload-label" for="fileInput">
+    拖拽文件到此处，或 <span>点击选择文件</span>
+  </label>
+  <input type="file" id="fileInput" accept=".txt,.csv,.zone,text/*">
+</div>
+
+<div class="actions">
+  <button id="startBtn" disabled>开始检查</button>
+  <button id="clearBtn">清空</button>
+  <span class="progress" id="progress"></span>
+</div>
+
+<p class="notice">通过 <a href="https://api.ropean.org">api.ropean.org</a> 代理请求，allowRedirect=false，跳转只显示第一次状态码。</p>
+
+<div class="filter-bar" id="filterBar"></div>
+
+<table id="resultTable">
+  <thead>
+    <tr>
+      <th class="cb-col"><input type="checkbox" id="checkAll" checked title="全选/全不选"></th>
+      <th>#</th>
+      <th>主机</th>
+      <th>URL</th>
+      <th>状态</th>
+      <th>标记</th>
+      <th>重试</th>
+    </tr>
+  </thead>
+  <tbody id="resultBody"></tbody>
+</table>
+
+<script>
+  const fileInput = document.getElementById('fileInput');
+  const dropZone  = document.getElementById('dropZone');
+  const startBtn  = document.getElementById('startBtn');
+  const clearBtn  = document.getElementById('clearBtn');
+  const progress  = document.getElementById('progress');
+  const tbody     = document.getElementById('resultBody');
+  const filterBar = document.getElementById('filterBar');
+
+  let hosts = [];
+  // { code: string, marked: bool } per row
+  const rowMeta = [];
+
+  // ── Debounce ───────────────────────────────────────────────────────────────
+
+  function debounce(fn, ms) {
+    let t;
+    return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+  }
+  const scheduleBuildFilters = debounce(buildFilters, 150);
+
+  // ── File handling ──────────────────────────────────────────────────────────
+
+  dropZone.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) loadFile(file);
+  });
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files[0]) loadFile(fileInput.files[0]);
+  });
+
+  function loadFile(file) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      hosts = parseDNS(e.target.result);
+      renderTable(hosts);
+      startBtn.disabled = hosts.length === 0;
+      progress.textContent = `共 ${hosts.length} 条`;
+      filterBar.innerHTML = '';
+    };
+    reader.readAsText(file, 'UTF-8');
+  }
+
+  // ── DNS parser ─────────────────────────────────────────────────────────────
+
+  function parseDNS(text) {
+    const seen = new Set();
+    const result = [];
+    for (const raw of text.split('\n')) {
+      const line = raw.trim();
+      if (!line || line.startsWith(';') || line.startsWith('#')) continue;
+      const col = line.split(/\s+/)[0];
+      let host = col.replace(/\.$/, '');
+      if (!host || host === '@' || host.startsWith('*')) continue;
+      if (!/^[a-zA-Z0-9._-]+$/.test(host)) continue;
+      if (!host.includes('.')) continue;
+      host = host.toLowerCase();
+      if (seen.has(host)) continue;
+      seen.add(host);
+      result.push(host);
+    }
+    return result;
+  }
+
+  // ── Table render ───────────────────────────────────────────────────────────
+
+  function renderTable(hosts) {
+    tbody.innerHTML = '';
+    rowMeta.length = 0;
+    hosts.forEach((host, i) => {
+      rowMeta.push({ code: null, marked: false });
+      const tr = document.createElement('tr');
+      tr.id = `row-${i}`;
+      tr.innerHTML = `
+        <td class="cb-col"><input type="checkbox" id="cb-${i}" checked></td>
+        <td>${i + 1}</td>
+        <td class="host">${escHtml(host)}</td>
+        <td class="host"><a href="https://${escHtml(host)}" target="_blank" rel="noopener">https://${escHtml(host)}</a></td>
+        <td class="status pending" id="st-${i}">–</td>
+        <td class="mark-col"><button class="mark-btn" id="mk-${i}" title="标记为已处理">✓</button></td>
+        <td class="retry-col"><button class="retry-btn" id="rt-${i}" title="重试">↺</button></td>
+      `;
+      tbody.appendChild(tr);
+
+      document.getElementById(`cb-${i}`).addEventListener('change', e => {
+        tr.classList.toggle('unchecked', !e.target.checked);
+        updateCheckAll();
+      });
+
+      document.getElementById(`mk-${i}`).addEventListener('click', () => toggleMark(i));
+      document.getElementById(`rt-${i}`).addEventListener('click', () => retryRow(i));
+    });
+    document.getElementById('checkAll').checked = true;
+    document.getElementById('checkAll').indeterminate = false;
+    activeFilter = 'all';
+    buildFilters();   // show "全部 0" immediately
+  }
+
+  function updateCheckAll() {
+    const boxes = [...tbody.querySelectorAll('input[type=checkbox]')];
+    const all = boxes.every(b => b.checked);
+    const none = boxes.every(b => !b.checked);
+    const ca = document.getElementById('checkAll');
+    ca.checked = all;
+    ca.indeterminate = !all && !none;
+  }
+
+  document.getElementById('checkAll').addEventListener('change', e => {
+    const checked = e.target.checked;
+    tbody.querySelectorAll('input[type=checkbox]').forEach(b => { b.checked = checked; });
+    tbody.querySelectorAll('tr').forEach(tr => tr.classList.toggle('unchecked', !checked));
+  });
+
+  // ── Mark logic ─────────────────────────────────────────────────────────────
+
+  function toggleMark(i) {
+    const meta = rowMeta[i];
+    meta.marked = !meta.marked;
+    const btn = document.getElementById(`mk-${i}`);
+    const el  = document.getElementById(`st-${i}`);
+    btn.classList.toggle('marked', meta.marked);
+    if (meta.marked) {
+      el.className = 'status s208';
+      el.textContent = '208';
+    } else {
+      applyStatus(el, meta.code, i);
+    }
+    // re-apply current filter (208 is its own filter bucket)
+    applyFilterToRow(i);
+    scheduleBuildFilters();
+  }
+
+  function applyStatus(el, code, rowIdx) {
+    if (!code) { el.className = 'status pending'; el.textContent = '–'; return; }
+    const n = parseInt(code, 10);
+    const cls = isNaN(n) ? 'serr' : n >= 500 ? 's5xx' : n >= 400 ? 's4xx' : n >= 300 ? 's3xx' : 's2xx';
+    el.className = `status ${cls}`;
+    el.textContent = code;
+    if (rowIdx !== undefined) {
+      const btn = document.getElementById(`mk-${rowIdx}`);
+      const is200 = n === 200;
+      btn.disabled = is200;
+      btn.style.opacity = is200 ? '0.2' : '';
+      btn.style.cursor  = is200 ? 'default' : '';
+    }
+  }
+
+  // displayed code: 208 when marked, otherwise original
+  function displayCode(i) {
+    return rowMeta[i].marked ? '208' : rowMeta[i].code;
+  }
+
+  function applyFilterToRow(i) {
+    if (activeFilter === 'all') return;
+    const tr = document.getElementById(`row-${i}`);
+    tr.classList.toggle('hidden', displayCode(i) !== activeFilter);
+  }
+
+  // ── Filter ─────────────────────────────────────────────────────────────────
+
+  let activeFilter = 'all';
+
+  function buildFilters() {
+    const counts = {};
+    hosts.forEach((_, i) => {
+      const c = displayCode(i);
+      if (!c) return;
+      counts[c] = (counts[c] || 0) + 1;
+    });
+
+    const done = hosts.filter((_, i) => displayCode(i)).length;
+
+    // Update existing pills in-place to avoid flicker; rebuild if structure changed
+    const existing = [...filterBar.querySelectorAll('.fpill[data-filter]')];
+    const existingKeys = existing.map(p => p.dataset.filter);
+    const newKeys = ['all', ...Object.keys(counts).sort((a, b) => (parseInt(a)||9999) - (parseInt(b)||9999))];
+    const needRebuild = JSON.stringify(existingKeys) !== JSON.stringify(newKeys);
+
+    if (needRebuild) {
+      filterBar.innerHTML = '';
+      addPill('all', `全部 ${done}`, 'fpill-all', activeFilter === 'all');
+      const sorted = Object.keys(counts).sort((a, b) => (parseInt(a)||9999) - (parseInt(b)||9999));
+      sorted.forEach(code => {
+        const n = parseInt(code, 10);
+        const cls = isNaN(n) ? 'fpill-err' : n >= 500 ? 'fpill-5xx' : n >= 400 ? 'fpill-4xx' : n >= 300 ? 'fpill-3xx' : 'fpill-2xx';
+        addPill(code, `${code} ×${counts[code]}`, cls, activeFilter === code);
+      });
+    } else {
+      // in-place update: just refresh label text, no DOM rebuild → no flicker
+      filterBar.querySelectorAll('.fpill[data-filter]').forEach(p => {
+        const v = p.dataset.filter;
+        if (v === 'all') {
+          p.querySelector('span').textContent = `全部 ${done}`;
+        } else if (counts[v] !== undefined) {
+          p.querySelector('span').textContent = `${v} ×${counts[v]}`;
+        }
+      });
+    }
+  }
+
+  function addPill(value, label, cls, active) {
+    const btn = document.createElement('button');
+    btn.className = `fpill ${cls}${active ? ' active' : ''}`;
+    btn.dataset.filter = value;
+    btn.innerHTML = `<span>${escHtml(label)}</span>`;
+    btn.addEventListener('click', () => applyFilter(value));
+    filterBar.appendChild(btn);
+  }
+
+  function applyFilter(value) {
+    activeFilter = value;
+    filterBar.querySelectorAll('.fpill').forEach(p => {
+      p.classList.toggle('active', p.dataset.filter === value);
+    });
+    hosts.forEach((_, i) => {
+      const tr = document.getElementById(`row-${i}`);
+      tr.classList.toggle('hidden', value !== 'all' && displayCode(i) !== value);
+    });
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // ── Check logic ────────────────────────────────────────────────────────────
+
+  const apiBase = () => location.hostname === 'localhost' ? '/api' : 'https://api.ropean.org';
+
+  async function runCheck(host, i) {
+    document.getElementById(`rt-${i}`).disabled = true;
+    const el = document.getElementById(`st-${i}`);
+    el.className = 'status pending';
+    el.innerHTML = '<span class="spinner"></span>';
+    const apiUrl = `${apiBase()}/request?`
+      + new URLSearchParams({ method: 'HEAD', url: `https://${host}`, allowRedirect: 'false' });
+    try {
+      const res = await fetch(apiUrl);
+      if (!res.ok) throw new Error(`API ${res.status}`);
+      const json = await res.json();
+      const s = json?.response?.statusCode;
+      if (!s) throw new Error('no statusCode');
+      const code = String(s);
+      rowMeta[i].code = code;
+      rowMeta[i].marked = false;
+      document.getElementById(`mk-${i}`).classList.remove('marked');
+      applyStatus(el, code, i);
+    } catch (err) {
+      rowMeta[i].code = 'Error';
+      el.className = 'status serr';
+      el.textContent = err.message.slice(0, 40);
+    }
+    applyFilterToRow(i);
+    scheduleBuildFilters();
+    document.getElementById(`rt-${i}`).disabled = false;
+  }
+
+  async function retryRow(i) {
+    await runCheck(hosts[i], i);
+  }
+
+  startBtn.addEventListener('click', async () => {
+    if (!hosts.length) return;
+    startBtn.disabled = true;
+    clearBtn.disabled = true;
+    activeFilter = 'all';
+    buildFilters();
+
+    hosts.forEach((_, i) => {
+      rowMeta[i].code = null;
+      rowMeta[i].marked = false;
+      document.getElementById(`mk-${i}`).classList.remove('marked');
+      document.getElementById(`row-${i}`).classList.remove('hidden');
+    });
+
+    let done = 0;
+    const CONCURRENCY = 5;
+    let idx = 0;
+
+    async function worker() {
+      while (idx < hosts.length) {
+        const i = idx++;
+        await runCheck(hosts[i], i);
+        done++;
+        progress.textContent = `${done} / ${hosts.length}`;
+      }
+    }
+
+    await Promise.all(Array.from({ length: CONCURRENCY }, worker));
+
+    startBtn.disabled = false;
+    clearBtn.disabled = false;
+    progress.textContent = `完成 ${done} / ${hosts.length}`;
+  });
+
+  // ── Clear ──────────────────────────────────────────────────────────────────
+
+  clearBtn.addEventListener('click', () => {
+    hosts = [];
+    rowMeta.length = 0;
+    tbody.innerHTML = '';
+    filterBar.innerHTML = '';
+    startBtn.disabled = true;
+    progress.textContent = '';
+    fileInput.value = '';
+  });
+</script>
+</body>
+</html>
