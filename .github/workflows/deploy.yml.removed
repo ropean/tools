@@ -19,7 +19,7 @@ jobs:
         with:
           # refer to https://github.com/SamKirkland/FTP-Deploy-Action
           # server: ${{ secrets.FTP_SERVER }}
-          server: ip.us.aceapp.dev
+          server: ip.us.ropean.org
           port: 21
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}

@@ -1,14 +1,14 @@
 {
-  "name": "tools.aceapp.dev",
+  "name": "tools-v1",
   "version": "1.0.0",
   "description": "",
-  "homepage": "https://github.com/ropean/tools.aceapp.dev#readme",
+  "homepage": "https://github.com/ropean/tools-v1#readme",
   "bugs": {
-    "url": "https://github.com/ropean/tools.aceapp.dev/issues"
+    "url": "https://github.com/ropean/tools-v1/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ropean/tools.aceapp.dev.git"
+    "url": "git+https://github.com/ropean/tools-v1.git"
   },
   "license": "ISC",
   "author": "",

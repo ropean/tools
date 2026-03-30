@@ -3,7 +3,12 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   root: '_site',
   server: {
-    port: 8080,
-    host: true,
+    proxy: {
+      '/api': {
+        target: 'https://api.ropean.org',
+        changeOrigin: true,
+        rewrite: path => path.replace(/^\/api/, ''),
+      },
+    },
   },
 });

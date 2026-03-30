@@ -238,6 +238,28 @@ try {
     fs.writeFileSync(path.join(outputDir, 'index.html'), html);
   }
 
+  function injectNavbar(html, title) {
+    const navbar = `<style>
+  .__tnav{position:fixed;top:0;left:0;right:0;height:48px;background:#fff;border-bottom:1px solid #ebebeb;display:flex;align-items:center;padding:0 24px;gap:0;z-index:9999;box-shadow:0 1px 4px rgba(0,0,0,.05);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;}
+  .__tnav-home{display:inline-flex;align-items:center;gap:7px;color:#111;text-decoration:none;font-size:.9rem;font-weight:600;letter-spacing:-.01em;white-space:nowrap;transition:opacity .15s;}
+  .__tnav-home:hover{opacity:.65;}
+  .__tnav-home svg{color:#555;}
+  .__tnav-title{margin-left:16px;padding-left:16px;border-left:1px solid #e5e5e5;font-size:.82rem;color:#bbb;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:400;}
+  .__tnav-spacer{height:48px;}
+</style>
+<nav class="__tnav">
+  <a href="/" class="__tnav-home">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    AceApp 工具合集
+  </a>
+  <span class="__tnav-title">${title}</span>
+</nav>
+<div class="__tnav-spacer"></div>`;
+
+    // inject right after opening <body> tag
+    return html.replace(/(<body[^>]*>)/i, `$1\n${navbar}`);
+  }
+
   function copyPublicFiles(publicDir, outputDir, excludeFiles = []) {
     const copyDir = (src, dest) => {
       if (!fs.existsSync(dest)) {
@@ -252,7 +274,15 @@ try {
         if (fs.statSync(srcPath).isDirectory()) {
           copyDir(srcPath, destPath);
         } else if (!excludeFiles.includes(item)) {
-          fs.copyFileSync(srcPath, destPath);
+          if (item.endsWith('.html')) {
+            let html = fs.readFileSync(srcPath, 'utf8');
+            const titleMatch = html.match(/<title>(.*?)<\/title>/i);
+            const title = titleMatch ? titleMatch[1].trim() : '';
+            html = injectNavbar(html, title);
+            fs.writeFileSync(destPath, html, 'utf8');
+          } else {
+            fs.copyFileSync(srcPath, destPath);
+          }
         }
       });
     };

@@ -69,10 +69,10 @@ jobs:
         run: |
           if [[ "${{ steps.env.outputs.environment }}" == "ci"* ]] || [[ "${{ steps.env.outputs.environment }}" == "ci" ]]; then
             echo "project=tools-ci" >> $GITHUB_OUTPUT
-            echo "domain=tools-ci.aceapp.dev" >> $GITHUB_OUTPUT
+            echo "domain=tools.aceapp.dev" >> $GITHUB_OUTPUT
           else
             echo "project=tools" >> $GITHUB_OUTPUT
-            echo "domain=tools.aceapp.dev" >> $GITHUB_OUTPUT
+            echo "domain=tools.ropean.org" >> $GITHUB_OUTPUT
           fi
 
       - name: Deploy to Cloudflare Pages
