@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nginx / OpenResty 配置格式化</title>
+    <meta name="description" content="格式化 Nginx 和 OpenResty 配置文件，自动处理 Lua block 缩进">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --surface-2: #f1f5f9;
+            --border: #e2e8f0;
+            --border-focus: #6366f1;
+            --text-primary: #0f172a;
+            --text-secondary: #64748b;
+            --text-muted: #94a3b8;
+            --accent: #6366f1;
+            --accent-light: #eef2ff;
+            --accent-hover: #4f46e5;
+            --success: #10b981;
+            --code-bg: #0f172a;
+            --code-text: #e2e8f0;
+            --radius: 8px;
+            --radius-lg: 12px;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+            --shadow: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -1px rgba(0,0,0,0.04);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ── Header ── */
+        .header {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 14px 24px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .header-inner {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-icon {
+            width: 34px;
+            height: 34px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 17px;
+        }
+
+        .header-title { font-size: 16px; font-weight: 700; }
+        .header-subtitle { font-size: 12px; color: var(--text-secondary); margin-top: 1px; }
+
+        .header-actions { display: flex; gap: 8px; align-items: center; }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 14px;
+            border-radius: var(--radius);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--text-secondary);
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+
+        .btn:hover { color: var(--accent); border-color: var(--accent); background: var(--accent-light); }
+
+        .btn.primary {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            border-color: transparent;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(99,102,241,0.3);
+        }
+
+        .btn.primary:hover {
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            color: white;
+            border-color: transparent;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(99,102,241,0.4);
+        }
+
+        .btn.success { color: var(--success); border-color: var(--success); background: #f0fdf4; }
+
+        /* ── Main Layout ── */
+        .main {
+            flex: 1;
+            max-width: 1400px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 20px 24px;
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 0;
+            align-items: stretch;
+            min-height: 0;
+        }
+
+        /* ── Panels ── */
+        .panel {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            min-height: 0;
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+        }
+
+        .panel-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+        .panel-actions { display: flex; gap: 6px; }
+
+        .panel-body {
+            flex: 1;
+            position: relative;
+            border: 1px solid var(--border);
+            border-top: none;
+            border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+            overflow: hidden;
+        }
+
+        .panel-body textarea {
+            width: 100%;
+            height: 100%;
+            min-height: 600px;
+            border: none;
+            outline: none;
+            resize: none;
+            padding: 16px 18px;
+            font-family: 'SF Mono', 'Fira Code', 'JetBrains Mono', Consolas, monospace;
+            font-size: 12.5px;
+            line-height: 1.75;
+            color: var(--text-primary);
+            background: var(--surface);
+            tab-size: 4;
+        }
+
+        .panel-body textarea::placeholder { color: var(--text-muted); }
+
+        .panel-body textarea:focus { background: #fefeff; }
+
+        /* Output panel uses code styling */
+        .panel-body.output textarea {
+            background: var(--code-bg);
+            color: var(--code-text);
+        }
+
+        /* ── Center Divider ── */
+        .center-col {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 0 16px;
+        }
+
+        .divider-line {
+            width: 1px;
+            flex: 1;
+            background: var(--border);
+        }
+
+        /* ── Options Bar ── */
+        .options-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .opt-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .opt-label input[type="checkbox"] {
+            accent-color: var(--accent);
+            width: 13px;
+            height: 13px;
+        }
+
+        /* ── Status bar ── */
+        .status-bar {
+            padding: 6px 14px;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-top: none;
+            border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+            font-size: 11px;
+            color: var(--text-muted);
+            display: flex;
+            gap: 16px;
+        }
+
+        .status-item { display: flex; align-items: center; gap: 4px; }
+        .status-item.ok { color: var(--success); }
+        .status-item.warn { color: #f59e0b; }
+
+        /* ── Responsive ── */
+        @media (max-width: 900px) {
+            .main {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+            .center-col { flex-direction: row; padding: 8px 0; }
+            .divider-line { width: auto; height: 1px; flex: 1; }
+        }
+
+        @media (max-width: 600px) {
+            .main { padding: 12px 16px; }
+        }
+    </style>
+</head>
+<body>
+
+<header class="header">
+    <div class="header-inner">
+        <div class="header-left">
+            <div class="header-icon">⚙</div>
+            <div>
+                <div class="header-title">Nginx / OpenResty 配置格式化</div>
+                <div class="header-subtitle">自动缩进，支持 *_by_lua_block 内 Lua 语法</div>
+            </div>
+        </div>
+        <div class="header-actions">
+            <button class="btn" onclick="clearAll()">🗑 清空</button>
+            <button class="btn primary" onclick="doFormat()">⚡ 格式化</button>
+        </div>
+    </div>
+</header>
+
+<main class="main">
+
+    <!-- Input Panel -->
+    <div class="panel">
+        <div class="panel-header">
+            <div class="panel-title">📥 输入</div>
+            <div class="panel-actions">
+                <button class="btn" style="padding:4px 10px;font-size:12px" onclick="loadSample()">载入示例</button>
+            </div>
+        </div>
+        <div class="panel-body" style="flex:1">
+            <textarea id="input" placeholder="粘贴 Nginx 或 OpenResty 配置文件内容…" spellcheck="false"></textarea>
+        </div>
+        <div class="status-bar">
+            <span class="status-item" id="inputStat">0 行</span>
+        </div>
+    </div>
+
+    <!-- Center -->
+    <div class="center-col">
+        <div class="divider-line"></div>
+        <button class="btn primary" onclick="doFormat()" title="格式化" style="padding:10px 14px;font-size:18px;border-radius:50%;width:44px;height:44px;justify-content:center">→</button>
+        <div class="divider-line"></div>
+    </div>
+
+    <!-- Output Panel -->
+    <div class="panel">
+        <div class="panel-header">
+            <div class="panel-title">📤 输出</div>
+            <div class="panel-actions">
+                <button class="btn" style="padding:4px 10px;font-size:12px" id="copyBtn" onclick="copyOutput()">📋 复制</button>
+            </div>
+        </div>
+        <div class="panel-body output" style="flex:1">
+            <textarea id="output" readonly placeholder="格式化结果将显示在这里…" spellcheck="false"></textarea>
+        </div>
+        <div class="status-bar">
+            <span class="status-item" id="outputStat">0 行</span>
+            <span class="status-item" id="outputMsg"></span>
+        </div>
+    </div>
+
+</main>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// Formatter Core
+// ─────────────────────────────────────────────────────────────────────────────
+
+const INDENT = '    '; // 4 spaces
+const ind = (n) => INDENT.repeat(Math.max(0, n));
+
+/**
+ * Count net brace balance of a line, ignoring content inside:
+ *   - Lua single-line comments (-- ...)
+ *   - Single-quoted strings
+ *   - Double-quoted strings
+ * Returns delta: positive = more { than }, negative = more } than {
+ */
+function netBraces(line) {
+    let balance = 0;
+    let inDouble = false;
+    let inSingle = false;
+
+    for (let i = 0; i < line.length; i++) {
+        const c = line[i];
+
+        if (!inDouble && !inSingle) {
+            // Lua comment: ignore rest of line
+            if (c === '-' && line[i + 1] === '-') break;
+            // Nginx comment: ignore rest of line
+            if (c === '#') break;
+
+            if (c === '"')  { inDouble = true; continue; }
+            if (c === "'")  { inSingle = true; continue; }
+            if (c === '{')  { balance++; }
+            if (c === '}')  { balance--; }
+        } else if (inDouble && c === '"' && line[i - 1] !== '\\') {
+            inDouble = false;
+        } else if (inSingle && c === "'" && line[i - 1] !== '\\') {
+            inSingle = false;
+        }
+    }
+    return balance;
+}
+
+/**
+ * Detect whether a line opens a Lua block directive.
+ * Matches patterns like:
+ *   header_filter_by_lua_block {
+ *   rewrite_by_lua_block {
+ *   content_by_lua_block {
+ *   access_by_lua_block {
+ *   set_by_lua_block {  (etc.)
+ */
+function isLuaBlockOpener(line) {
+    return /\b\w+_by_lua_block\s*\{/.test(line) ||
+           /\bset_by_lua_block\s*\{/.test(line);
+}
+
+/**
+ * Lua indentation: keywords that dedent the current line (before output).
+ * Must be checked before outputting.
+ */
+function luaDedentBefore(line) {
+    return /^end\b/.test(line) ||
+           /^else\b/.test(line) ||
+           /^elseif\b/.test(line);
+}
+
+/**
+ * Lua indentation: patterns that indent the next line (after output).
+ */
+function luaIndentAfter(line) {
+    // Ends with 'then' (if ... then, or standalone 'then')
+    if (/\bthen$/.test(line)) return true;
+    // Ends with 'do' (for/while/do)
+    if (/\bdo$/.test(line)) return true;
+    // Standalone 'else'
+    if (/^else$/.test(line)) return true;
+    // Function definition ending with )
+    if (/^function\b/.test(line) && /\)$/.test(line)) return true;
+    return false;
+}
+
+function formatNginxConfig(raw) {
+    // Split and trim all lines
+    const rawLines = raw.split('\n').map(l => l.trim());
+
+    const out = [];
+    let nginxDepth = 0;
+    let inLua = false;
+    let luaDepth = 0;
+    let luaBraceBalance = 0;
+    let prevBlank = false;
+
+    for (const line of rawLines) {
+        // ── Blank lines ──────────────────────────────────────────
+        if (line === '') {
+            // Collapse consecutive blanks into one
+            if (!prevBlank && out.length > 0) {
+                out.push('');
+                prevBlank = true;
+            }
+            continue;
+        }
+        prevBlank = false;
+
+        // ── NGINX MODE ───────────────────────────────────────────
+        if (!inLua) {
+            // Closing brace(s): dedent before output
+            if (line.startsWith('}')) {
+                nginxDepth = Math.max(0, nginxDepth - 1);
+                out.push(ind(nginxDepth) + line);
+
+                // A line like "} else {" or just "}" — handle opening after
+                if (line.endsWith('{')) nginxDepth++;
+                continue;
+            }
+
+            out.push(ind(nginxDepth) + line);
+
+            // Opening brace: indent after
+            if (line.endsWith('{')) {
+                nginxDepth++;
+                // Entering a Lua block?
+                if (isLuaBlockOpener(line)) {
+                    inLua = true;
+                    luaDepth = 0;
+                    luaBraceBalance = 1; // the { on this line
+                }
+            }
+
+        // ── LUA MODE ─────────────────────────────────────────────
+        } else {
+            // Track braces to detect end of lua block
+            luaBraceBalance += netBraces(line);
+
+            // Balance reached 0: this line closes the lua block
+            if (luaBraceBalance <= 0) {
+                inLua = false;
+                nginxDepth = Math.max(0, nginxDepth - 1);
+                out.push(ind(nginxDepth) + '}');
+                continue;
+            }
+
+            // Lua keyword dedent (before output)
+            if (luaDedentBefore(line)) {
+                luaDepth = Math.max(0, luaDepth - 1);
+            }
+
+            out.push(ind(nginxDepth + luaDepth) + line);
+
+            // Lua keyword indent (after output)
+            if (luaIndentAfter(line)) {
+                luaDepth++;
+            }
+        }
+    }
+
+    // Remove trailing blank lines
+    while (out.length > 0 && out[out.length - 1] === '') out.pop();
+
+    return out.join('\n');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// UI
+// ─────────────────────────────────────────────────────────────────────────────
+
+const inputEl  = document.getElementById('input');
+const outputEl = document.getElementById('output');
+
+function updateInputStat() {
+    const lines = inputEl.value.split('\n').length;
+    const chars = inputEl.value.length;
+    document.getElementById('inputStat').textContent =
+        `${lines} 行 · ${chars} 字符`;
+}
+
+function doFormat() {
+    const raw = inputEl.value;
+    if (!raw.trim()) return;
+
+    const result = formatNginxConfig(raw);
+    outputEl.value = result;
+
+    const inLines  = raw.trim().split('\n').length;
+    const outLines = result.split('\n').length;
+    document.getElementById('outputStat').textContent =
+        `${outLines} 行 · ${result.length} 字符`;
+
+    const msg = document.getElementById('outputMsg');
+    msg.textContent = '✓ 格式化完成';
+    msg.className = 'status-item ok';
+    setTimeout(() => { msg.textContent = ''; msg.className = 'status-item'; }, 3000);
+}
+
+function copyOutput() {
+    const text = outputEl.value;
+    if (!text) return;
+    navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('copyBtn');
+        btn.textContent = '✅ 已复制';
+        btn.classList.add('success');
+        setTimeout(() => {
+            btn.textContent = '📋 复制';
+            btn.classList.remove('success');
+        }, 2000);
+    });
+}
+
+function clearAll() {
+    inputEl.value = '';
+    outputEl.value = '';
+    document.getElementById('inputStat').textContent = '0 行';
+    document.getElementById('outputStat').textContent = '0 行';
+    document.getElementById('outputMsg').textContent = '';
+    inputEl.focus();
+}
+
+// Support Ctrl/Cmd + Enter to format
+document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        doFormat();
+    }
+});
+
+inputEl.addEventListener('input', updateInputStat);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Sample
+// ─────────────────────────────────────────────────────────────────────────────
+
+const SAMPLE = `server {
+listen 80;
+server_name mis.ropean.org;
+index index.php index.html index.htm default.php default.htm default.html;
+
+proxy_set_header Host $host;
+proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+proxy_set_header X-Forwarded-Host $server_name;
+proxy_set_header X-Real-IP $remote_addr;
+proxy_http_version 1.1;
+proxy_set_header Upgrade $http_upgrade;
+proxy_set_header Connection $http_connection;
+
+access_log /www/sites/mis.ropean.org/log/access.log main;
+error_log  /www/sites/mis.ropean.org/log/error.log;
+
+# CORS: 在响应过滤阶段注入头信息
+header_filter_by_lua_block {
+local origin = ngx.req.get_headers()["Origin"] or ""
+
+-- 白名单：允许指定域名（精确匹配）
+if origin:match("^https?://(music%.ropean%.org)$")
+or origin:match("^https?://(music%.aceapp%.dev)$")
+then
+-- 精确返回请求方的 origin
+ngx.header["Access-Control-Allow-Origin"]      = origin
+ngx.header["Access-Control-Allow-Methods"]     = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+ngx.header["Access-Control-Allow-Headers"]     = "Content-Type, Authorization, X-Requested-With"
+ngx.header["Access-Control-Allow-Credentials"] = "true"
+ngx.header["Vary"]                             = "Origin"
+end
+}
+
+# CORS: 在 rewrite 阶段拦截 OPTIONS 预检请求
+rewrite_by_lua_block {
+if ngx.req.get_method() == "OPTIONS" then
+local origin = ngx.req.get_headers()["Origin"] or ""
+
+-- 同白名单，仅对允许的 origin 响应预检
+if origin:match("^https?://(music%.ropean%.org)$")
+or origin:match("^https?://(music%.aceapp%.dev)$")
+then
+ngx.header["Access-Control-Allow-Origin"]      = origin
+ngx.header["Access-Control-Allow-Methods"]     = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+ngx.header["Access-Control-Allow-Headers"]     = "Content-Type, Authorization, X-Requested-With"
+ngx.header["Access-Control-Allow-Credentials"] = "true"
+ngx.header["Access-Control-Max-Age"]           = "86400"
+ngx.status = 204
+ngx.exit(204)
+end
+end
+}
+
+location ^~ /.well-known/acme-challenge {
+allow all;
+root /usr/share/nginx/html;
+}
+
+location / {
+root /www/sites/mis.ropean.org/index;
+try_files $uri $uri/ =404;
+}
+
+error_page 404 /404.html;
+}`;
+
+function loadSample() {
+    inputEl.value = SAMPLE;
+    updateInputStat();
+    doFormat();
+}
+</script>
+
+</body>
+</html>

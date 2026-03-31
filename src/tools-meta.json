@@ -1,4 +1,5 @@
 {
+  "nginx-config-formatter.html":   { "date": "2026-03-31" },
   "openresty-cors-generator.html": { "date": "2026-03-31", "featured": true },
   "dns-checker.html":              { "date": "2026-03-30", "featured": true },
   "inlined.html":                  { "date": "2026-02-14" },
