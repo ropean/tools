@@ -1,80 +1,85 @@
 # AceApp 工具合集
 
-基于 Eleventy 的静态站点生成器，用于自动收集和展示 HTML 工具文件。
+静态工具站点。每个工具是 `public/` 下一个独立的 HTML 文件，构建时自动扫描并生成首页索引，部署到 Cloudflare Pages。
 
-## 功能特性
+## 快速开始
 
-- 🔍 **智能搜索** - 支持标题、描述、标签搜索
-- 📁 **自动分类** - 根据文件名自动分类工具
-- 🏷️ **标签系统** - 灵活的标签管理
-- 📱 **响应式设计** - 完美适配移动端
-- ⚡ **快速构建** - 基于 Node.js 的高效构建
-
-## 开发环境
-
-### 安装依赖
 ```bash
 pnpm install
-```
-
-### 开发模式
-```bash
-pnpm dev
-```
-这个命令会：
-1. 自动构建站点
-2. 启动 Vite 预览服务器
-3. 在浏览器中打开页面
-
-### 手动构建
-```bash
-pnpm build
-```
-
-### 预览已构建的站点
-```bash
-pnpm preview
-```
-
-### 构建并预览
-```bash
-pnpm build:serve
+pnpm dev      # 开发模式：监听变化自动重建 + vite 本地预览
+pnpm build    # 生产构建，输出到 _site/
+pnpm ship     # 构建 + 部署到 Cloudflare Pages (main)
 ```
 
 ## 项目结构
 
 ```
-├── build.js                 # 自定义构建脚本
-├── vite.config.js           # Vite 配置
-├── .eleventy.js            # Eleventy 配置
-├── src/
-│   ├── _layouts/
-│   │   └── base.njk        # 基础模板
-│   └── index.njk           # 主页模板
-├── public/                 # 原始 HTML 工具文件
-└── _site/                  # 生成的静态站点
+public/                  # 工具 HTML 文件（每个工具一个文件）
+src/
+  _layouts/base.njk      # 首页模板
+  tools-meta.json        # 工具元数据：发布日期、精选标记
+build.js                 # 生产构建
+dev.js                   # 开发构建（含 chokidar 热重载）
+_site/                   # 构建输出（不提交）
 ```
-
-## 部署
-
-### Cloudflare Pages
-```bash
-pnpm deploy
-```
-
-### 其他静态托管
-将 `_site` 目录内容部署到任何静态托管服务即可。
 
 ## 添加新工具
 
-1. 将 HTML 文件放入 `public` 目录
-2. 运行 `pnpm build` 重新生成站点
-3. 系统会自动识别并分类新工具
+### 1. 创建 HTML 文件
+
+在 `public/` 下新建自包含的 HTML 文件：
+
+```html
+<title>工具名称</title>
+<meta name="description" content="一句话描述">
+```
+
+- 文件名用 `kebab-case.html`
+- CSS / JS 全部内联或通过 CDN 加载，不依赖项目内其他文件
+- 构建时会自动注入顶部导航栏（返回首页），无需手动添加
+
+### 2. 注册到 `src/tools-meta.json`
+
+```json
+{
+  "new-tool.html": { "date": "2026-04-01" }
+}
+```
+
+| 字段 | 说明 |
+|------|------|
+| `date` | 发布日期 `YYYY-MM-DD`，决定首页排序位置 |
+| `featured` | `true` 则标为精选，精选工具排在所有非精选之前 |
+
+不在清单里的工具 fallback 到文件 mtime，排在已有工具之后。
+
+### 3. 验证
+
+```bash
+pnpm build
+```
+
+## 首页排序规则
+
+**精选 > 非精选**，同级别内按 `date` 降序（最新在前）。
+
+## 自动分类规则
+
+分类由文件名关键词自动判断：
+
+| 文件名包含 | 分类 |
+|-----------|------|
+| `color`, `schema` | 颜色工具 |
+| `password`, `random`, `string` | 生成器 |
+| `html`, `format` | 格式化工具 |
+| `robots`, `htaccess` | Web工具 |
+| `zip`, `command` | 命令行工具 |
+| 其他 | 其他 |
 
 ## 技术栈
 
-- **构建工具**: Node.js + 自定义脚本
-- **模板引擎**: Nunjucks
-- **预览服务器**: Vite
-- **包管理**: pnpm
-- **样式**: 原生 CSS + 现代设计
+- 构建：Node.js 自定义脚本
+- 模板：Nunjucks
+- 预览：Vite
+- 包管理：pnpm
+- 部署：Cloudflare Pages
