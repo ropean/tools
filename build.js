@@ -43,6 +43,12 @@ try {
   }
 
   function collectTools(publicDir) {
+    // 读取元数据清单（date、featured 等）
+    const metaPath = path.join(__dirname, 'src', 'tools-meta.json');
+    const meta = fs.existsSync(metaPath)
+      ? JSON.parse(fs.readFileSync(metaPath, 'utf8'))
+      : {};
+
     const tools = [];
     const files = fs
       .readdirSync(publicDir)
@@ -66,6 +72,15 @@ try {
 
       // 获取文件信息
       const stats = fs.statSync(filePath);
+
+      // 日期：优先用清单中的 date，否则 fallback 到 mtime
+      const fileMeta = meta[file] || {};
+      const date = fileMeta.date
+        ? new Date(fileMeta.date)
+        : stats.mtime;
+
+      // featured：从清单读取
+      const featured = fileMeta.featured === true;
 
       // 分类逻辑
       let category = '其他';
@@ -106,16 +121,16 @@ try {
         category,
         tags,
         size: stats.size,
-        modified: stats.mtime,
-        featured: [
-          'index.html',
-          'password-generator.html',
-          'color.html',
-        ].includes(file),
+        date,
+        featured,
       });
     });
 
-    return tools.sort((a, b) => new Date(b.modified) - new Date(a.modified));
+    // 精选优先，同级别按日期降序
+    return tools.sort((a, b) => {
+      if (a.featured !== b.featured) return a.featured ? -1 : 1;
+      return new Date(b.date) - new Date(a.date);
+    });
   }
 
   function generateIndexPage(tools, outputDir) {
