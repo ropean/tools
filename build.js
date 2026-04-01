@@ -35,6 +35,9 @@ try {
     console.log('Copying public files...');
     copyPublicFiles(publicDir, outputDir, ['index.html']);
 
+    // 生成 _redirects（旧 .html URL 301 到 clean URL）
+    // generateRedirects(tools, outputDir);
+
     console.log('Site generated successfully!');
     console.log(`Tools found: ${tools.length}`);
     console.log(
@@ -116,7 +119,7 @@ try {
       tools.push({
         title,
         description,
-        url: '/' + file,
+        url: '/' + file.replace('.html', ''),
         fileName: file,
         category,
         tags,
@@ -273,6 +276,16 @@ try {
 
     // inject right after opening <body> tag
     return html.replace(/(<body[^>]*>)/i, `$1\n${navbar}`);
+  }
+
+  function generateRedirects(tools, outputDir) {
+    const lines = tools.map(
+      (t) => `/${t.fileName} /${t.fileName.replace('.html', '')} 301`,
+    );
+    fs.writeFileSync(
+      path.join(outputDir, '_redirects'),
+      lines.join('\n') + '\n',
+    );
   }
 
   function copyPublicFiles(publicDir, outputDir, excludeFiles = []) {

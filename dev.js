@@ -137,7 +137,7 @@ function collectTools(publicDir) {
     tools.push({
       title,
       description,
-      url: '/' + file,
+      url: '/' + file.replace('.html', ''),
       fileName: file,
       category,
       tags,
