@@ -22,6 +22,7 @@ _site/               # 构建输出目录（不提交）
 ```bash
 pnpm dev       # 开发模式：监听文件变化 + vite 预览服务
 pnpm build     # 生产构建，输出到 _site/
+pnpm preview   # 构建后用 vite 静态预览（无热重载）
 pnpm ship      # 构建 + 部署到 Cloudflare Pages (main)
 pnpm ship:ci   # 构建 + 部署到 Cloudflare Pages (ci)
 ```
@@ -44,6 +45,19 @@ pnpm ship:ci   # 构建 + 部署到 Cloudflare Pages (ci)
 - 完全自包含（CSS 和 JS 均内联，或通过 CDN 加载）
 - 不依赖项目内其他文件
 - 响应式设计，支持移动端
+
+**配色规范（与首页保持一致）：**
+
+工具页面的主色调必须与首页 (`src/_layouts/base.njk`) 的蓝色风格保持一致，禁止使用其他主色（如靛紫 `#6366f1`）：
+
+| 用途 | 值 |
+|------|----|
+| 主强调色 | `#2563eb` |
+| 强调色 hover | `#1d4ed8` |
+| 强调色浅底 | `#eff6ff` |
+| 按钮/图标渐变 | `linear-gradient(135deg, #3b82f6, #1d4ed8)` |
+| 按钮 hover 渐变 | `linear-gradient(135deg, #2563eb, #1e3a8a)` |
+| 阴影 alpha | `rgba(37, 99, 235, 0.3)` |
 
 ### 2. 注册到元数据清单
 

@@ -6,7 +6,8 @@
 
 ```bash
 pnpm install
-pnpm dev      # 开发模式：监听变化自动重建 + vite 本地预览
+pnpm dev      # 开发模式：监听变化自动重建 + vite 本地预览  
+pnpm preview  # 构建后用 vite 静态预览（无热重载）
 pnpm build    # 生产构建，输出到 _site/
 pnpm ship     # 构建 + 部署到 Cloudflare Pages (main)
 ```
