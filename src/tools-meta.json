@@ -1,15 +1,15 @@
 {
-  "nginx-config-formatter.html":   { "date": "2026-03-31" },
+  "nginx-config-formatter.html": { "date": "2026-03-31", "featured": true },
   "openresty-cors-generator.html": { "date": "2026-03-31", "featured": true },
-  "dns-checker.html":              { "date": "2026-03-30", "featured": true },
-  "inlined.html":                  { "date": "2026-02-14" },
-  "balance_sheet_analyzer.html":   { "date": "2025-09-07" },
-  "color.html":                    { "date": "2025-09-05" },
-  "htmlFormat.html":               { "date": "2025-09-05" },
-  "password-generator.html":       { "date": "2025-09-05" },
-  "Random-String-Generator.html":  { "date": "2025-09-05", "featured": true },
-  "Random-String-Generator_CN.html": { "date": "2025-09-05" },
-  "rewrite_rules_htaccess.html":   { "date": "2025-09-05" },
-  "Robots.txt_Generator.html":     { "date": "2025-09-05" },
-  "zip.html":                      { "date": "2025-09-05" }
+  "dns-checker.html": { "date": "2026-03-30", "featured": true },
+  "inlined.html": { "date": "2026-02-14" },
+  "balance_sheet_analyzer.html": { "date": "2025-09-07" },
+  "color.html": { "date": "2025-09-05" },
+  "htmlFormat.html": { "date": "2025-09-05" },
+  "password-generator.html": { "date": "2025-09-05" },
+  "Random-String-Generator.html": { "date": "2025-09-05" },
+  "Random-String-Generator_CN.html": { "date": "2025-09-05", "featured": true },
+  "rewrite_rules_htaccess.html": { "date": "2025-09-05" },
+  "Robots.txt_Generator.html": { "date": "2025-09-05" },
+  "zip.html": { "date": "2025-09-05" }
 }

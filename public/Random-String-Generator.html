@@ -81,11 +81,11 @@
           <label class="mr-3"><input type="checkbox" id="chkCpaChar" checked> Uppercase Letters</label>
           <label class="mr-3"><input type="checkbox" id="chkLowChar" checked> Lowercase Letters</label>
           <label class="mr-3"><input type="checkbox" id="chkNum" checked> Numbers</label>
-          <label><input type="checkbox" id="chkSpeChar" checked> Special Characters</label>
+          <label><input type="checkbox" id="chkSpeChar"> Special Characters</label>
           <input type="text" id="txtSpe" class="ml-2" placeholder="Common special characters" disabled>
         </div>
         <div class="form-group">
-          <label>String Length: <input type="number" id="txtLen" value="16"></label>
+          <label>String Length: <input type="number" id="txtLen" value="20"></label>
           <label class="ml-3">Number of Strings: <input type="number" id="txtNum" value="1"></label>
         </div>
         <button class="btn btn-primary" id="btnGen" onclick="generateRandomString()">Generate Random Strings</button>
@@ -102,6 +102,7 @@
       txtSpe.disabled = !document.getElementById("chkSpeChar").checked;
     }
     toggleSpecialChars();
+    generateRandomString();
   </script>
 </body>
 </html>
