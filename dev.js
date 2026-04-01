@@ -261,7 +261,7 @@ function generateIndexPage(tools, outputDir) {
     </div>
   `,
     )
-    .replace('{% if title %}{{ title }} - {% endif %}', 'AceApp 工具合集 - ');
+    .replace('{% if title %}{{ title }} - {% endif %}', 'DevKit — 开发者工具包 - ');
 
   // 写入文件
   fs.writeFileSync(path.join(outputDir, 'index.html'), html);

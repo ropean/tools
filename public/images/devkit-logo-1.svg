@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="bg1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6"/>
+      <stop offset="100%" style="stop-color:#1d4ed8"/>
+    </linearGradient>
+  </defs>
+  <!-- 圆角方形背景 -->
+  <rect width="200" height="200" rx="40" ry="40" fill="url(#bg1)"/>
+  <!-- 扳手 + 代码尖括号组合 -->
+  <!-- 左尖括号 < -->
+  <text x="30" y="115" font-family="monospace" font-size="72" font-weight="bold" fill="white" opacity="0.25">&lt;</text>
+  <!-- 右尖括号 > -->
+  <text x="122" y="115" font-family="monospace" font-size="72" font-weight="bold" fill="white" opacity="0.25">&gt;</text>
+  <!-- 扳手图标（中心） -->
+  <g transform="translate(100,96) rotate(-35)">
+    <!-- 扳手头部 -->
+    <circle cx="0" cy="-30" r="16" fill="none" stroke="white" stroke-width="9"/>
+    <circle cx="0" cy="-30" r="7" fill="white"/>
+    <!-- 扳手柄 -->
+    <rect x="-4.5" y="-18" width="9" height="52" rx="4.5" fill="white"/>
+    <!-- 扳手尾部小圆 -->
+    <circle cx="0" cy="38" r="6" fill="white"/>
+  </g>
+</svg>

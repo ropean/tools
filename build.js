@@ -241,8 +241,8 @@ try {
   `,
       )
       .replace(
-        '{% if title %}{{ title }} - {% endif %}AceApp 工具合集',
-        'AceApp 工具合集',
+        '{% if title %}{{ title }} - {% endif %}DevKit — 开发者工具包',
+        'DevKit — 开发者工具包',
       )
       .replace(
         '{{ "now" | date("YYYY") }}',
@@ -265,7 +265,7 @@ try {
 <nav class="__tnav">
   <a href="/" class="__tnav-home">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-    AceApp 工具合集
+    DevKit — 开发者工具包
   </a>
   <span class="__tnav-title">${title}</span>
 </nav>
