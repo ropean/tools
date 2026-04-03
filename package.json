@@ -17,9 +17,9 @@
   "scripts": {
     "build": "node build.js",
     "dev": "concurrently \"node dev.js\" \"vite\"",
-    "ship": "wrangler pages deploy ./_site --project-name=tools --branch=main",
     "preview": "node build.js && vite",
-    "ship:ci": "wrangler pages deploy ./_site --project-name=tools-ci --branch=ci",
+    "ship": "wrangler pages deploy ./_site --project-name=tools --branch=main",
+    "ship:ci": "wrangler pages deploy ./_site --project-name=tools-ci --branch=main",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "devDependencies": {

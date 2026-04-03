@@ -1,4 +1,4 @@
-name: Deploy to Cloudflare
+name: Deploy to Cloudflare Pages
 
 on:
   push:
@@ -10,9 +10,9 @@ on:
   workflow_dispatch:
     inputs:
       environment:
-        description: 'Environment'
+        description: Environment
         required: true
-        default: 'ci'
+        default: ci
         type: choice
         options:
           - ci
@@ -21,9 +21,6 @@ on:
 permissions:
   contents: read
   deployments: write
-  # contents: write
-  # pages: write
-  # id-token: write
 
 jobs:
   deploy:
@@ -31,24 +28,19 @@ jobs:
     environment: ${{ github.event_name == 'push' && (startsWith(github.ref_name, 'ci') && 'ci' || 'release') || inputs.environment }}
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.2
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
+      - uses: actions/setup-node@v6.3.0
         with:
           node-version: 24
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v5
+      - uses: pnpm/action-setup@v5.0.0
         with:
           version: 10
 
-      - name: Install Wrangler
-        run: pnpm install -g wrangler
+      - run: pnpm install
 
-      - name: Build files
-        run: pnpm run build
+      - run: pnpm build
 
       - name: Determine environment
         id: env
@@ -63,11 +55,10 @@ jobs:
             echo "environment=${{ inputs.environment }}" >> $GITHUB_OUTPUT
           fi
 
-      # Determine Cloudflare project name
-      - name: Determine Cloudflare project name
+      - name: Determine project
         id: project
         run: |
-          if [[ "${{ steps.env.outputs.environment }}" == "ci"* ]] || [[ "${{ steps.env.outputs.environment }}" == "ci" ]]; then
+          if [[ "${{ steps.env.outputs.environment }}" == ci* ]]; then
             echo "project=tools-ci" >> $GITHUB_OUTPUT
             echo "domain=tools.aceapp.dev" >> $GITHUB_OUTPUT
           else
@@ -76,7 +67,7 @@ jobs:
           fi
 
       - name: Deploy to Cloudflare Pages
-        uses: cloudflare/wrangler-action@v3
+        uses: cloudflare/wrangler-action@v3.14.1
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -85,7 +76,7 @@ jobs:
       - name: Deployment summary
         run: |
           cat << EOF >> $GITHUB_STEP_SUMMARY
-          ## ✅ Website Deployed
+          ## ✅ Deployed
 
           - 🚀 Deployment completed!
           - 🔧 Environment: ${{ steps.env.outputs.environment }}
