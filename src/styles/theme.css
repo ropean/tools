@@ -21,6 +21,10 @@
 
 * { box-sizing: border-box; }
 
+/* Always reserve the scrollbar gutter so page width doesn't shift when content
+   height changes (e.g. filtering categories) — keeps chip wrapping stable. */
+html { scrollbar-gutter: stable; }
+
 body {
   margin: 0;
   background: var(--bg);
@@ -193,7 +197,7 @@ textarea.field { resize: vertical; }
   padding: 0 clamp(20px, 5vw, 40px) 16px;
   display: flex;
   gap: 8px;
-  flex-wrap: wrap; /* wrap to new rows on narrow screens (no horizontal scroll) */
+  flex-wrap: wrap; /* wrapped rows align to the left edge (under All / Favorites) */
 }
 
 /* Clearable search inputs: × button shown only when there is input */
@@ -221,6 +225,7 @@ textarea.field { resize: vertical; }
   color: var(--fg);
   cursor: pointer;
 }
+.chip:not([aria-pressed='true']):hover { border-color: var(--border-strong); background: var(--subtle); }
 .chip[aria-pressed='true'] { background: var(--dark); color: var(--on-dark); border-color: var(--dark); }
 .chip-fav .chip-heart { display: inline-flex; color: #e0245e; }
 .chip-fav .chip-heart svg { width: 14px; height: 14px; }
