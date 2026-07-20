@@ -90,6 +90,7 @@ export const TOOLS = [
   { id: 'ports', category: 'dev', name: 'ports', desc: 'See what is running on your ports — a color-coded CLI.', external: 'https://github.com/ropean/ports', ready: true },
   { id: 'launchpad', category: 'dev', name: 'launchpad', desc: 'Cross-platform GUI to start, stop and watch local dev projects.', external: 'https://github.com/ropean/launchpad', ready: true },
   { id: 'muze', category: 'media', name: 'muze', desc: 'Search Chinese music platforms and resolve playback URLs.', external: 'https://github.com/ropean/muze', ready: true },
+  { id: 'itdog-ping', category: 'dev', name: 'ITDOG Ping (vercel.app)', desc: 'Ping vercel.app from many locations across China (via ITDOG).', external: 'https://www.itdog.cn/ping/vercel.app', ready: true },
 ];
 
 // The link target for a tool card / switcher entry: the external URL for
