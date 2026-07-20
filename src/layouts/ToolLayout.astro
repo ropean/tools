@@ -5,17 +5,24 @@
 // <Fragment slot="sidebar"> if a tool needs custom side content.
 import Base from './Base.astro';
 import CategoryIcon from '../components/CategoryIcon.astro';
-import { TOOLS, categoryLabel, groupByCategory, toolHref } from '../data/tools.js';
+import ToolIcon from '../components/ToolIcon.astro';
+import { categoryLabel, groupByCategory, toolHref } from '../data/tools.js';
+
+const heart = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5S3.5 15 3.5 8.9C3.5 6.1 5.7 4 8.4 4c1.7 0 3 .8 3.6 2c.6-1.2 1.9-2 3.6-2c2.7 0 4.9 2.1 4.9 4.9c0 6.1-8.5 11.6-8.5 11.6z"/></svg>';
 
 const { tool } = Astro.props;
 const catLabel = categoryLabel(tool.category);
-const related = TOOLS.filter((t) => t.category === tool.category && t.id !== tool.id).slice(0, 5);
+// Single sorted source: both the switcher and the related list derive from
+// groupByCategory (categories + tools already sorted alphabetically).
 const switcherGroups = groupByCategory();
+const related = (switcherGroups.find((g) => g.key === tool.category)?.tools ?? [])
+  .filter((t) => t.id !== tool.id)
+  .slice(0, 5);
 ---
 <Base title={`${tool.name} · QingTools`} description={tool.desc}>
   <div class="tool-page">
     <p class="breadcrumb">
-      <a href="/">Home</a> / {catLabel} / {tool.name}
+      <a href="/">Home</a> / <a href={`/?category=${tool.category}`}>{catLabel}</a> / {tool.name}
     </p>
 
     <div class="tool-toolbar">
@@ -49,16 +56,17 @@ const switcherGroups = groupByCategory();
                   class="related-item"
                   href={toolHref(t)}
                   data-switcher-item
+                  data-id={t.id}
                   data-search={`${t.name} ${t.desc}`.toLowerCase()}
                   style="padding:9px 12px;"
                   aria-current={t.id === tool.id ? 'page' : undefined}
                   target={t.external ? '_blank' : undefined}
                   rel={t.external ? 'noopener' : undefined}
                 >
-                  <span class="mini-icon"><CategoryIcon category={t.category} /></span>
-                  {t.name}
-                  {t.external && <span style="margin-left:auto;font-size:10px;color:var(--muted);">External ↗</span>}
-                  {!t.external && !t.ready && <span style="margin-left:auto;font-size:10px;color:var(--muted);">Coming soon</span>}
+                  <span class="mini-icon"><ToolIcon tool={t} size={16} /></span>
+                  <span class="sw-name">{t.name}</span>
+                  {t.external && <span class="sw-ext">↗</span>}
+                  <button type="button" class="fav-btn sw-fav" data-fav aria-pressed="false" aria-label="Toggle favorite" set:html={heart}></button>
                 </a>
               ))}
             </div>
@@ -86,9 +94,9 @@ const switcherGroups = groupByCategory();
                     target={rt.external ? '_blank' : undefined}
                     rel={rt.external ? 'noopener' : undefined}
                   >
-                    <span class="mini-icon"><CategoryIcon category={rt.category} /></span>
-                    {rt.name}
-                    {rt.external && <span style="margin-left:auto;font-size:10px;color:var(--muted);">External ↗</span>}
+                    <span class="mini-icon"><ToolIcon tool={rt} size={16} /></span>
+                    <span class="sw-name">{rt.name}</span>
+                    {rt.external && <span class="sw-ext">↗</span>}
                   </a>
                 ))}
               </div>
@@ -99,6 +107,12 @@ const switcherGroups = groupByCategory();
     </div>
   </div>
 </Base>
+
+<style>
+  .related-item .sw-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .related-item .sw-ext { color: var(--muted); font-size: 11px; flex: 0 0 auto; }
+  .related-item .sw-fav { flex: 0 0 auto; width: 24px; height: 24px; }
+</style>
 
 <script>
   // Tool switcher: open/close, close on outside click, filter by text.
@@ -131,4 +145,31 @@ const switcherGroups = groupByCategory();
       group.hidden = !group.querySelector('[data-switcher-item]:not([hidden])');
     }
   });
+
+  // Favorite hearts inside the switcher (shared 'favorites' localStorage key).
+  const FAV_KEY = 'favorites';
+  function loadFavs() {
+    try {
+      const a = JSON.parse(localStorage.getItem(FAV_KEY) || '[]');
+      return new Set(Array.isArray(a) ? a : []);
+    } catch { return new Set(); }
+  }
+  let favs = loadFavs();
+  function syncSwitcherHearts() {
+    for (const btn of document.querySelectorAll('[data-switcher-item] [data-fav]')) {
+      const id = btn.closest('[data-switcher-item]').dataset.id;
+      btn.setAttribute('aria-pressed', favs.has(id) ? 'true' : 'false');
+    }
+  }
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-switcher-item] [data-fav]');
+    if (!btn) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const id = btn.closest('[data-switcher-item]').dataset.id;
+    if (favs.has(id)) favs.delete(id); else favs.add(id);
+    try { localStorage.setItem(FAV_KEY, JSON.stringify([...favs])); } catch { /* private mode */ }
+    syncSwitcherHearts();
+  });
+  syncSwitcherHearts();
 </script>

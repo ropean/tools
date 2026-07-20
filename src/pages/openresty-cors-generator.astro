@@ -120,7 +120,7 @@ const tool = TOOLS.find((t) => t.id === 'openresty-cors-generator');
       <div class="code-card">
         <div class="code-header">
           <span class="code-title">Generated Lua config blocks</span>
-          <button type="button" class="btn code-copy" id="copyBtn">Copy</button>
+          <button type="button" class="btn btn-copy code-copy" id="copyBtn">Copy</button>
         </div>
         <div class="code-body">
           <div class="code-placeholder" id="codePlaceholder">Configure options, then click Generate config</div>
@@ -180,8 +180,9 @@ const tool = TOOLS.find((t) => t.id === 'openresty-cors-generator');
   .legend-dot.subdomain { background: var(--error); }
 
   /* Checkbox grid */
-  .cb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 7px; }
+  .cb-grid { display: flex; flex-wrap: wrap; gap: 7px; }
   .cb-item {
+    flex: 0 0 auto;
     display: flex; align-items: center; gap: 8px; padding: 8px 10px;
     border: 1px solid var(--border); border-radius: var(--radius);
     cursor: pointer; user-select: none; transition: border-color 0.15s, background 0.15s;
@@ -189,7 +190,7 @@ const tool = TOOLS.find((t) => t.id === 'openresty-cors-generator');
   .cb-item:hover { border-color: var(--border-strong); }
   .cb-item.is-checked { border-color: var(--border-strong); background: var(--subtle); }
   .cb-item input[type='checkbox'] { width: 14px; height: 14px; accent-color: var(--dark); cursor: pointer; flex: 0 0 auto; }
-  .cb-item span { font-size: 13px; font-family: var(--mono); color: var(--fg); }
+  .cb-item span { font-size: 13px; font-family: var(--mono); color: var(--fg); white-space: nowrap; }
   .cb-item.is-checked span { font-weight: 600; }
 
   /* Toggle rows */

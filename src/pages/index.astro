@@ -95,12 +95,14 @@ const heart = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColo
     });
   }
 
+  const cardName = (c) => (c.querySelector('.name')?.textContent || '');
   function renderFavorites() {
     favGrid.textContent = '';
-    // Clone favorited cards (in page order) into the top Favorites group.
-    for (const c of catCards) {
-      if (favorites.has(c.dataset.id)) favGrid.appendChild(c.cloneNode(true));
-    }
+    // Clone favorited cards into the top Favorites group, sorted by name.
+    const favCards = catCards
+      .filter((c) => favorites.has(c.dataset.id))
+      .sort((a, b) => cardName(a).localeCompare(cardName(b), undefined, { sensitivity: 'base' }));
+    for (const c of favCards) favGrid.appendChild(c.cloneNode(true));
     favCount.textContent = String(favorites.size);
     favChip.hidden = favorites.size === 0;
     if (favorites.size === 0 && activeCategory === 'favorites') {
@@ -151,14 +153,30 @@ const heart = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColo
     apply();
   });
 
+  // Keep ?category=<key> in the URL in sync with the active chip ('all' clears it).
+  function updateUrl() {
+    const url = new URL(location.href);
+    if (activeCategory === 'all') url.searchParams.delete('category');
+    else url.searchParams.set('category', activeCategory);
+    history.replaceState(null, '', url);
+  }
+
   search.addEventListener('input', apply);
   chips.forEach((chip) => {
     chip.addEventListener('click', () => {
       activeCategory = chip.dataset.filter;
       chips.forEach((c) => c.setAttribute('aria-pressed', String(c === chip)));
+      updateUrl();
       apply();
     });
   });
+
+  // Preselect a category from ?category=<key> (e.g. from a tool breadcrumb).
+  const requested = new URLSearchParams(location.search).get('category');
+  if (requested && chips.some((c) => c.dataset.filter === requested)) {
+    activeCategory = requested;
+    chips.forEach((c) => c.setAttribute('aria-pressed', String(c.dataset.filter === requested)));
+  }
 
   renderFavorites();
   apply();

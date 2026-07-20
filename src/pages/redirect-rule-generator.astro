@@ -2,7 +2,7 @@
 import ToolLayout from '../layouts/ToolLayout.astro';
 import { TOOLS } from '../data/tools.js';
 
-const tool = TOOLS.find((t) => t.id === 'htaccess-rewrite');
+const tool = TOOLS.find((t) => t.id === 'redirect-rule-generator');
 ---
 <ToolLayout tool={tool}>
   <div class="hrr">
@@ -29,7 +29,7 @@ const tool = TOOLS.find((t) => t.id === 'htaccess-rewrite');
     <div class="hrr-actions">
       <button type="button" class="btn btn-primary" id="hrr-apache">Generate Apache rules</button>
       <button type="button" class="btn" id="hrr-nginx">Generate Nginx rules</button>
-      <button type="button" class="btn btn-ghost" id="hrr-copy">Copy</button>
+      <button type="button" class="btn btn-copy" id="hrr-copy">Copy</button>
     </div>
 
     <div class="hrr-field">

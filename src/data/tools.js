@@ -36,7 +36,7 @@ export const TOOLS = [
   { id: 'dns-checker', category: 'web', name: 'DNS Checker', desc: 'Query and inspect DNS records for any domain.', icon: 'globe', ready: true },
   { id: 'nginx-config-formatter', category: 'web', name: 'Nginx Config Formatter', desc: 'Format and beautify Nginx configuration files.', icon: 'server', ready: true },
   { id: 'openresty-cors-generator', category: 'web', name: 'OpenResty CORS Generator', desc: 'Generate CORS config snippets for OpenResty and Nginx.', icon: 'shield', ready: true },
-  { id: 'htaccess-rewrite', category: 'web', name: '.htaccess Rewrite Rules', desc: 'Build Apache rewrite rules visually.', icon: 'file', ready: true },
+  { id: 'redirect-rule-generator', category: 'web', name: 'Redirect Rule Generator', desc: 'Generate www and HTTPS redirect rules for Apache and Nginx.', icon: 'file', ready: true },
 
   // --- External tools (off-site, open in a new tab) ---
   { id: 'jwt-decoder', category: 'dev', name: 'JWT Decoder', desc: 'Decode and inspect JSON Web Tokens.', favicon: 'favicon.svg', external: 'https://jwt.ropean.org/', ready: true },
