@@ -1,0 +1,124 @@
+---
+import ToolLayout from '../layouts/ToolLayout.astro';
+import { TOOLS } from '../data/tools.js';
+
+const tool = TOOLS.find((t) => t.id === 'markdown-to-html');
+
+const sample = `# Hello, Markdown
+
+Write **Markdown** on the left, get *HTML* on the right.
+
+- Lists
+- [Links](https://example.com)
+- \`inline code\`
+
+\`\`\`js
+console.log('fenced code blocks too');
+\`\`\`
+
+> Blockquotes, tables and more.
+
+| Tool | Kind |
+| ---- | ---- |
+| Markdown | text |
+`;
+---
+<ToolLayout tool={tool}>
+  <div class="md">
+    <div class="md-pane">
+      <span class="md-label">Markdown</span>
+      <textarea class="field mono" id="md-in" spellcheck="false">{sample}</textarea>
+    </div>
+
+    <div class="md-pane">
+      <div class="md-outhead">
+        <div class="md-tabs" role="tablist">
+          <button type="button" class="md-tab active" id="md-tab-preview" role="tab" aria-selected="true">Preview</button>
+          <button type="button" class="md-tab" id="md-tab-html" role="tab" aria-selected="false">HTML</button>
+        </div>
+        <button type="button" class="btn" id="md-copy" style="margin-left:auto;">Copy HTML</button>
+      </div>
+      <div class="md-preview" id="md-preview"></div>
+      <textarea class="field mono" id="md-html" spellcheck="false" readonly hidden></textarea>
+    </div>
+  </div>
+</ToolLayout>
+
+<style is:global>
+  .md { display: flex; flex-wrap: wrap; gap: 16px; align-items: stretch; }
+  .md-pane { flex: 1 1 340px; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+  .md-label { font-size: 12px; color: var(--muted); }
+  .md-pane #md-in { flex: 1; min-height: 480px; }
+
+  .md-outhead { display: flex; align-items: center; gap: 8px; }
+  .md-tabs { display: inline-flex; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .md-tab { background: transparent; border: none; padding: 7px 14px; font-size: 13px; color: var(--muted); cursor: pointer; }
+  .md-tab.active { background: var(--dark); color: var(--on-dark); }
+
+  .md-preview, .md #md-html {
+    flex: 1; min-height: 480px;
+    border: 1px solid var(--border); border-radius: var(--radius-lg);
+    background: var(--bg); padding: 20px 22px; overflow: auto;
+  }
+
+  /* Rendered-markdown typography (needs global: nodes come from innerHTML). */
+  .md-preview { font-size: 15px; line-height: 1.6; color: var(--fg); }
+  .md-preview > :first-child { margin-top: 0; }
+  .md-preview h1, .md-preview h2, .md-preview h3, .md-preview h4 { line-height: 1.25; margin: 1.4em 0 0.5em; }
+  .md-preview h1 { font-size: 1.7em; } .md-preview h2 { font-size: 1.4em; } .md-preview h3 { font-size: 1.2em; }
+  .md-preview p { margin: 0.6em 0; }
+  .md-preview a { color: var(--accent, #2563eb); text-decoration: underline; }
+  .md-preview code { font-family: var(--mono); font-size: 0.9em; background: var(--subtle); padding: 1px 5px; border-radius: 4px; }
+  .md-preview pre { background: var(--subtle); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; overflow: auto; }
+  .md-preview pre code { background: none; padding: 0; }
+  .md-preview blockquote { margin: 0.8em 0; padding: 2px 16px; border-left: 3px solid var(--border-strong); color: var(--muted); }
+  .md-preview ul, .md-preview ol { padding-left: 1.4em; margin: 0.6em 0; }
+  .md-preview img { max-width: 100%; height: auto; }
+  .md-preview table { border-collapse: collapse; width: 100%; margin: 0.8em 0; }
+  .md-preview th, .md-preview td { border: 1px solid var(--border); padding: 6px 10px; text-align: left; }
+  .md-preview hr { border: none; border-top: 1px solid var(--border); margin: 1.2em 0; }
+</style>
+
+<script>
+  import { marked } from 'marked';
+
+  marked.setOptions({ gfm: true, breaks: false });
+
+  const inEl = document.getElementById('md-in');
+  const previewEl = document.getElementById('md-preview');
+  const htmlEl = document.getElementById('md-html');
+  const tabPreview = document.getElementById('md-tab-preview');
+  const tabHtml = document.getElementById('md-tab-html');
+
+  // Note: the preview renders your own Markdown in your own browser; output is
+  // not sanitized, so treat pasted HTML the same as running it yourself.
+  function render() {
+    const html = marked.parse(inEl.value);
+    previewEl.innerHTML = html;
+    htmlEl.value = html;
+  }
+
+  function showTab(which) {
+    const preview = which === 'preview';
+    previewEl.hidden = !preview;
+    htmlEl.hidden = preview;
+    tabPreview.classList.toggle('active', preview);
+    tabHtml.classList.toggle('active', !preview);
+    tabPreview.setAttribute('aria-selected', String(preview));
+    tabHtml.setAttribute('aria-selected', String(!preview));
+  }
+
+  let t;
+  inEl.addEventListener('input', () => { clearTimeout(t); t = setTimeout(render, 150); });
+  tabPreview.addEventListener('click', () => showTab('preview'));
+  tabHtml.addEventListener('click', () => showTab('html'));
+  document.getElementById('md-copy').addEventListener('click', async () => {
+    await navigator.clipboard.writeText(htmlEl.value);
+    const btn = document.getElementById('md-copy');
+    const prev = btn.textContent;
+    btn.textContent = 'Copied';
+    setTimeout(() => { btn.textContent = prev; }, 1200);
+  });
+
+  render();
+</script>

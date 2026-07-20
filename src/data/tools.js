@@ -55,6 +55,7 @@ export const TOOLS = [
 
   // --- Planned tools (in-site placeholder pages) ---
   { id: 'json-tree-viewer', category: 'text', name: 'JSON Tree Viewer', desc: 'Explore JSON as a collapsible tree and filter it down to nodes matching a keyword.', ready: true },
+  { id: 'markdown-to-html', category: 'text', name: 'Markdown to HTML', desc: 'Convert Markdown to HTML with a live preview.', ready: true },
   { id: 'base64', category: 'text', name: 'Base64 Encode / Decode', desc: 'Convert text to and from Base64.', ready: false },
   { id: 'text-diff', category: 'text', name: 'Text Diff', desc: 'Highlight the differences between two texts.', ready: false },
   { id: 'regex-tester', category: 'dev', name: 'Regex Tester', desc: 'Test regular expressions against text in real time.', ready: false },
