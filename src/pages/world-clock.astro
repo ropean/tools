@@ -82,7 +82,6 @@ const tool = TOOLS.find((t) => t.id === 'world-clock');
   // World Clock — live clocks for fixed UTC offsets, saved in localStorage.
   // Offsets are DST-free by design (a clock is just "UTC + N minutes").
   const KEY = 'world-clock';
-  const LEGACY_KEYS = ['world-clock.v1', 'world-clock.v2'];
 
   // Real-world UTC offsets in minutes, from -12:00 to +14:00.
   const OFFSETS = [
@@ -103,22 +102,13 @@ const tool = TOOLS.find((t) => t.id === 'world-clock');
 
   // { offsets: number[] (minutes), hour12: boolean }
   let state = load();
-  save(); // persist under the current key (also finalizes any migration)
-
-  function readKey(k) {
-    try {
-      const p = JSON.parse(localStorage.getItem(k) || '');
-      if (p && Array.isArray(p.offsets)) return { offsets: p.offsets, hour12: !!p.hour12 };
-    } catch { /* ignore corrupt/empty */ }
-    return null;
-  }
 
   function load() {
-    // Prefer the current key; fall back to the legacy dotted v2 (same shape).
-    const s = readKey(KEY) || readKey('world-clock.v2') || { offsets: [0], hour12: false };
-    // One-time cleanup of legacy dotted keys.
-    for (const k of LEGACY_KEYS) { try { localStorage.removeItem(k); } catch { /* ignore */ } }
-    return s;
+    try {
+      const p = JSON.parse(localStorage.getItem(KEY) || '');
+      if (p && Array.isArray(p.offsets)) return { offsets: p.offsets, hour12: !!p.hour12 };
+    } catch { /* ignore corrupt/empty */ }
+    return { offsets: [0], hour12: false }; // default: UTC
   }
   function save() {
     try { localStorage.setItem(KEY, JSON.stringify(state)); } catch { /* private mode */ }
