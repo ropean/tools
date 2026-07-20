@@ -22,6 +22,7 @@ export const TOOLS = [
     category: 'dev',
     name: 'DNS Checker',
     desc: 'Query and inspect DNS records for any domain.',
+    icon: 'globe',
     ready: true,
   },
   {
@@ -29,6 +30,7 @@ export const TOOLS = [
     category: 'dev',
     name: 'Nginx Config Formatter',
     desc: 'Format and beautify Nginx configuration files.',
+    icon: 'server',
     ready: true,
   },
   {
@@ -36,6 +38,7 @@ export const TOOLS = [
     category: 'dev',
     name: 'OpenResty CORS Generator',
     desc: 'Generate CORS configuration snippets for OpenResty and Nginx.',
+    icon: 'shield',
     ready: true,
   },
   {
@@ -43,6 +46,7 @@ export const TOOLS = [
     category: 'dev',
     name: '.htaccess Rewrite Rules',
     desc: 'Build Apache rewrite rules visually.',
+    icon: 'file',
     ready: true,
   },
   {
@@ -50,20 +54,21 @@ export const TOOLS = [
     category: 'daily',
     name: 'Random String Generator',
     desc: 'Generate random strings, tokens and passwords.',
+    icon: 'shuffle',
     ready: true,
   },
 
   // --- Planned tools (in-site placeholder pages) ---
-  { id: 'json-tree-viewer', category: 'text', name: 'JSON Tree Viewer', desc: 'Explore JSON as a collapsible tree and filter it down to nodes matching a keyword.', ready: true },
-  { id: 'markdown-to-html', category: 'text', name: 'Markdown to HTML', desc: 'Convert Markdown to HTML with a live preview.', ready: true },
+  { id: 'json-tree-viewer', category: 'text', name: 'JSON Tree Viewer', desc: 'Explore JSON as a collapsible tree and filter it down to nodes matching a keyword.', icon: 'braces', ready: true },
+  { id: 'markdown-to-html', category: 'text', name: 'Markdown to HTML', desc: 'Convert Markdown to HTML with a live preview.', icon: 'code', ready: true },
   { id: 'base64', category: 'text', name: 'Base64 Encode / Decode', desc: 'Convert text to and from Base64.', ready: false },
   { id: 'text-diff', category: 'text', name: 'Text Diff', desc: 'Highlight the differences between two texts.', ready: false },
   { id: 'regex-tester', category: 'dev', name: 'Regex Tester', desc: 'Test regular expressions against text in real time.', ready: false },
   { id: 'cron-builder', category: 'dev', name: 'Cron Builder', desc: 'Build cron schedule expressions visually.', ready: false },
   { id: 'image-converter', category: 'media', name: 'Image Converter', desc: 'Convert images between formats. Opens ic.ropean.org.', external: 'https://ic.ropean.org/', ready: true },
-  { id: 'qr-generator', category: 'media', name: 'QR Code Generator', desc: 'Turn text or a link into a downloadable QR code (PNG or SVG).', ready: true },
+  { id: 'qr-generator', category: 'media', name: 'QR Code Generator', desc: 'Turn text or a link into a downloadable QR code (PNG or SVG).', icon: 'qr', ready: true },
   { id: 'unit-converter', category: 'calc', name: 'Unit Converter', desc: 'Convert length, weight, temperature and more.', ready: false },
-  { id: 'world-clock', category: 'daily', name: 'World Clock', desc: 'See the current time around the world; add your own clocks, saved locally.', ready: true },
+  { id: 'world-clock', category: 'daily', name: 'World Clock', desc: 'See the current time around the world; add your own clocks, saved locally.', icon: 'clock', ready: true },
 
   // --- External tools (off-site, open in a new tab). Titles/descriptions taken
   //     from the live pages. ---

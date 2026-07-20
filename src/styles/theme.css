@@ -232,6 +232,7 @@ textarea.field { resize: vertical; }
   transition: border-color 0.15s ease, transform 0.15s ease;
 }
 .card:hover { border-color: var(--border-strong); transform: translateY(-2px); }
+.card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .card-icon {
   width: 36px;
   height: 36px;
@@ -240,7 +241,14 @@ textarea.field { resize: vertical; }
   display: flex;
   align-items: center;
   justify-content: center;
+  flex: 0 0 auto;
 }
+/* External favicon with graceful fallback to the category icon */
+.ti-fav { display: inline-flex; align-items: center; justify-content: center; }
+.ti-fav img { border-radius: 4px; }
+.ti-fav .ti-fallback { display: none; }
+.ti-fav.failed img { display: none; }
+.ti-fav.failed .ti-fallback { display: inline-flex; }
 .card-title { display: flex; align-items: center; gap: 8px; }
 .card-title .name { font-size: 18px; font-weight: 400; }
 .card-desc { font-size: 14px; color: var(--muted); line-height: 1.5; }
