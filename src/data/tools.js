@@ -81,6 +81,15 @@ export const TOOLS = [
   { id: 'markitdown', category: 'text', name: 'MarkItDown', desc: 'Convert any file or URL to clean Markdown.', external: 'https://md.ropean.org/', ready: true },
   { id: 'chinese-id-toolkit', category: 'daily', name: 'Chinese ID Toolkit', desc: 'Validate, look up, generate and upgrade Chinese ID numbers.', external: 'https://iv.ropean.org/', ready: true },
   { id: 'logo-designer', category: 'media', name: 'Logo Designer', desc: 'Design logos in the browser.', external: 'https://logo.ropean.org/', ready: true },
+  { id: 'peek', category: 'dev', name: 'Peek', desc: 'HTTP inspector and API debugging tool.', external: 'https://peek.aceapp.dev/', ready: true },
+
+  // --- GitHub projects (open in a new tab) ---
+  { id: 'git-z', category: 'dev', name: 'git-z', desc: 'Visualize a git repository history as a self-contained HTML report.', external: 'https://github.com/ropean/git-z', ready: true },
+  { id: 'qlint', category: 'dev', name: 'qlint', desc: 'Multi-language code quality scanner with HTML/JSON/Markdown reports.', external: 'https://github.com/ropean/qlint', ready: true },
+  { id: 'proxy', category: 'dev', name: 'proxy', desc: 'Tiny local reverse-proxy: forward several ports to one backend, rewriting Host.', external: 'https://github.com/ropean/proxy', ready: true },
+  { id: 'ports', category: 'dev', name: 'ports', desc: 'See what is running on your ports — a color-coded CLI.', external: 'https://github.com/ropean/ports', ready: true },
+  { id: 'launchpad', category: 'dev', name: 'launchpad', desc: 'Cross-platform GUI to start, stop and watch local dev projects.', external: 'https://github.com/ropean/launchpad', ready: true },
+  { id: 'muze', category: 'media', name: 'muze', desc: 'Search Chinese music platforms and resolve playback URLs.', external: 'https://github.com/ropean/muze', ready: true },
 ];
 
 // The link target for a tool card / switcher entry: the external URL for
