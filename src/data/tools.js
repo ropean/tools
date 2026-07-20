@@ -1,9 +1,9 @@
 // Tool catalog and categories.
 // Each tool: { id, category, name, desc, ready }
-//  - ready:true   → has a native Astro page at src/pages/tools/<id>.astro.
+//  - ready:true   → has a native Astro page at src/pages/<id>.astro.
 //  - ready:false  → shows a "Coming soon" badge; a placeholder page is generated
-//                   at /tools/<id>.html by src/pages/tools/[id].astro.
-// Every card / switcher entry links to /tools/<id>.html (see toolHref).
+//                   at /<id>.html by src/pages/[id].astro.
+// Every card / switcher entry links to /<id>.html at the site root (see toolHref).
 
 export const CATEGORIES = [
   { key: 'text', label: 'Text' },
@@ -14,7 +14,7 @@ export const CATEGORIES = [
 ];
 
 export const TOOLS = [
-  // --- Live tools (native Astro pages under src/pages/tools/) ---
+  // --- Live tools (native Astro pages under src/pages/) ---
   {
     id: 'dns-checker',
     category: 'dev',
@@ -52,7 +52,7 @@ export const TOOLS = [
   },
 
   // --- Planned tools (in-site placeholder pages) ---
-  { id: 'json-formatter', category: 'text', name: 'JSON Formatter', desc: 'Format, minify and validate JSON.', ready: false },
+  { id: 'json-formatter', category: 'text', name: 'JSON Formatter', desc: 'Format, minify, validate and search JSON.', ready: true },
   { id: 'base64', category: 'text', name: 'Base64 Encode / Decode', desc: 'Convert text to and from Base64.', ready: false },
   { id: 'text-diff', category: 'text', name: 'Text Diff', desc: 'Highlight the differences between two texts.', ready: false },
   { id: 'regex-tester', category: 'dev', name: 'Regex Tester', desc: 'Test regular expressions against text in real time.', ready: false },
@@ -63,10 +63,9 @@ export const TOOLS = [
   { id: 'timestamp-converter', category: 'calc', name: 'Timestamp Converter', desc: 'Convert between Unix timestamps and dates.', ready: false },
 ];
 
-// The link target for a tool card / switcher entry: always the wrapped in-site page.
-// Standalone tools (with `href`) are embedded inside that page via an iframe.
+// The link target for a tool card / switcher entry: a root-level page per tool.
 export function toolHref(tool) {
-  return `/tools/${tool.id}.html`;
+  return `/${tool.id}.html`;
 }
 
 export function categoryLabel(key) {

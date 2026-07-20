@@ -1,10 +1,10 @@
 ---
-import ToolLayout from '../../layouts/ToolLayout.astro';
-import CategoryIcon from '../../components/CategoryIcon.astro';
-import { TOOLS } from '../../data/tools.js';
+import ToolLayout from '../layouts/ToolLayout.astro';
+import CategoryIcon from '../components/CategoryIcon.astro';
+import { TOOLS } from '../data/tools.js';
 
 // Placeholder pages for planned tools. Live tools (ready:true) have their own
-// native page at src/pages/tools/<id>.astro instead.
+// native page at src/pages/<id>.astro instead.
 export function getStaticPaths() {
   return TOOLS.filter((t) => !t.ready).map((tool) => ({
     params: { id: tool.id },
