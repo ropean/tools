@@ -5,6 +5,7 @@ import ToolCard from '../components/ToolCard.astro';
 import { CATEGORIES, groupByCategory } from '../data/tools.js';
 
 const groups = groupByCategory();
+const heart = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 20.5S3.5 15 3.5 8.9C3.5 6.1 5.7 4 8.4 4c1.7 0 3 .8 3.6 2c.6-1.2 1.9-2 3.6-2c2.7 0 4.9 2.1 4.9 4.9c0 6.1-8.5 11.6-8.5 11.6z"/></svg>';
 ---
 <Base title="QingTools · handy little tools" description="A pocketful of small, ready-to-use online tools for developers and everyday tasks." current="home">
   <section class="hero">
@@ -13,12 +14,15 @@ const groups = groupByCategory();
     <p>QingTools collects small, good-enough, open-in-a-tap online tools. Growing all the time.</p>
     <div class="search">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5f5f5d" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
-      <input type="text" id="search" placeholder="Search tools, e.g. JSON, QR code, unit converter…" autocomplete="off" />
+      <input type="text" id="search" placeholder="Search tools, e.g. JSON, QR code, DNS…" autocomplete="off" />
     </div>
   </section>
 
   <div class="chips" id="chips">
     <button type="button" class="chip" data-filter="all" aria-pressed="true">All</button>
+    <button type="button" class="chip chip-fav" data-filter="favorites" id="fav-chip" aria-pressed="false" hidden>
+      <span class="chip-heart" set:html={heart}></span>Favorites
+    </button>
     {CATEGORIES.map((cat) => (
       <button type="button" class="chip" data-filter={cat.key} aria-pressed="false">
         <CategoryIcon category={cat.key} />
@@ -28,6 +32,15 @@ const groups = groupByCategory();
   </div>
 
   <div class="groups" id="groups">
+    <section class="group" id="fav-section" data-group="favorites" hidden>
+      <div class="group-head">
+        <span class="group-icon group-icon-fav" set:html={heart}></span>
+        <h2>Favorites</h2>
+        <span class="group-count" id="fav-count">0</span>
+      </div>
+      <div class="card-grid" id="fav-grid"></div>
+    </section>
+
     {groups.map((group) => (
       <section class="group" data-group={group.key}>
         <div class="group-head">
@@ -45,43 +58,107 @@ const groups = groupByCategory();
 </Base>
 
 <script>
-  // Home filtering: category chips + free-text search, applied entirely client-side.
+  // Home: category chips + search filter, plus client-side Favorites (localStorage).
   const search = document.getElementById('search');
   const chips = Array.from(document.querySelectorAll('#chips .chip'));
-  const groups = Array.from(document.querySelectorAll('#groups [data-group]'));
-  const cards = Array.from(document.querySelectorAll('#groups [data-tool]'));
   const empty = document.getElementById('empty');
+  const favSection = document.getElementById('fav-section');
+  const favGrid = document.getElementById('fav-grid');
+  const favCount = document.getElementById('fav-count');
+  const favChip = document.getElementById('fav-chip');
 
+  // Category groups (exclude the dynamic favorites section) and their cards.
+  const catGroups = Array.from(document.querySelectorAll('#groups [data-group]')).filter((g) => g.id !== 'fav-section');
+  const catCards = Array.from(document.querySelectorAll('#groups [data-group]:not(#fav-section) [data-tool]'));
+
+  const KEY = 'favorites';
+  let favorites = load();
   let activeCategory = 'all';
 
-  function apply() {
-    const query = (search?.value || '').trim().toLowerCase();
-    let visibleTotal = 0;
-
-    for (const card of cards) {
-      const matchCat = activeCategory === 'all' || card.dataset.category === activeCategory;
-      const matchText = !query || (card.dataset.search || '').includes(query);
-      const show = matchCat && matchText;
-      card.hidden = !show;
-      if (show) visibleTotal++;
-    }
-
-    // Hide groups that have no visible cards.
-    for (const group of groups) {
-      const anyVisible = group.querySelector('[data-tool]:not([hidden])');
-      group.hidden = !anyVisible;
-    }
-
-    if (empty) empty.hidden = visibleTotal > 0;
+  function load() {
+    try {
+      const a = JSON.parse(localStorage.getItem(KEY) || '[]');
+      return new Set(Array.isArray(a) ? a : []);
+    } catch { return new Set(); }
+  }
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify([...favorites])); } catch { /* private mode */ }
   }
 
-  search?.addEventListener('input', apply);
-
-  for (const chip of chips) {
-    chip.addEventListener('click', () => {
-      activeCategory = chip.dataset.filter;
-      for (const c of chips) c.setAttribute('aria-pressed', String(c === chip));
-      apply();
+  function syncHearts() {
+    document.querySelectorAll('[data-fav]').forEach((btn) => {
+      const card = btn.closest('[data-tool]');
+      const on = card && favorites.has(card.dataset.id);
+      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+      btn.setAttribute('aria-label', on ? 'Remove from favorites' : 'Add to favorites');
     });
   }
+
+  function renderFavorites() {
+    favGrid.textContent = '';
+    // Clone favorited cards (in page order) into the top Favorites group.
+    for (const c of catCards) {
+      if (favorites.has(c.dataset.id)) favGrid.appendChild(c.cloneNode(true));
+    }
+    favCount.textContent = String(favorites.size);
+    favChip.hidden = favorites.size === 0;
+    if (favorites.size === 0 && activeCategory === 'favorites') {
+      activeCategory = 'all';
+      chips.forEach((c) => c.setAttribute('aria-pressed', String(c.dataset.filter === 'all')));
+    }
+    syncHearts();
+  }
+
+  function apply() {
+    const q = (search.value || '').trim().toLowerCase();
+    const showFav = (activeCategory === 'all' || activeCategory === 'favorites') && favorites.size > 0;
+    let visible = 0;
+
+    let favVisible = 0;
+    favGrid.querySelectorAll('[data-tool]').forEach((c) => {
+      const ok = showFav && (!q || c.dataset.search.includes(q));
+      c.hidden = !ok;
+      if (ok) { favVisible++; visible++; }
+    });
+    favSection.hidden = favVisible === 0;
+
+    for (const c of catCards) {
+      let ok;
+      if (activeCategory === 'favorites') ok = false;
+      else if (activeCategory === 'all') ok = !q || c.dataset.search.includes(q);
+      else ok = c.dataset.category === activeCategory && (!q || c.dataset.search.includes(q));
+      c.hidden = !ok;
+      if (ok) visible++;
+    }
+    for (const g of catGroups) g.hidden = !g.querySelector('[data-tool]:not([hidden])');
+
+    empty.hidden = visible > 0;
+  }
+
+  // Heart clicks (delegated so cloned favorite cards work too).
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-fav]');
+    if (!btn) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const card = btn.closest('[data-tool]');
+    if (!card) return;
+    const id = card.dataset.id;
+    if (favorites.has(id)) favorites.delete(id); else favorites.add(id);
+    save();
+    renderFavorites();
+    apply();
+  });
+
+  search.addEventListener('input', apply);
+  chips.forEach((chip) => {
+    chip.addEventListener('click', () => {
+      activeCategory = chip.dataset.filter;
+      chips.forEach((c) => c.setAttribute('aria-pressed', String(c === chip)));
+      apply();
+    });
+  });
+
+  renderFavorites();
+  apply();
 </script>

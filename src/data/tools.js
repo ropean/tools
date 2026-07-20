@@ -15,8 +15,9 @@
 // Style: titles are the real product/repo names; descriptions are a single
 // sentence, verb-first, no parentheticals or domain names.
 
+// Note: "Favorites" is not a category — it is a dynamic group the home page
+// builds client-side from the visitor's saved favorites (localStorage).
 export const CATEGORIES = [
-  { key: 'daily', label: 'Everyday' },
   { key: 'text', label: 'Text & Data' },
   { key: 'dev', label: 'Developer' },
   { key: 'web', label: 'Web & Servers' },
@@ -26,9 +27,9 @@ export const CATEGORIES = [
 
 export const TOOLS = [
   // --- Live tools (native Astro pages under src/pages/) ---
-  { id: 'random-string-generator', category: 'daily', name: 'Random String Generator', desc: 'Generate random strings, tokens and passwords.', icon: 'shuffle', ready: true },
-  { id: 'qr-generator', category: 'daily', name: 'QR Code Generator', desc: 'Generate a QR code from text or a link.', icon: 'qr', ready: true },
-  { id: 'world-clock', category: 'daily', name: 'World Clock', desc: 'Track current times worldwide with your own saved clocks.', icon: 'clock', ready: true },
+  { id: 'random-string-generator', category: 'text', name: 'Random String Generator', desc: 'Generate random strings, tokens and passwords.', icon: 'shuffle', ready: true },
+  { id: 'qr-generator', category: 'media', name: 'QR Code Generator', desc: 'Generate a QR code from text or a link.', icon: 'qr', ready: true },
+  { id: 'world-clock', category: 'dev', name: 'World Clock', desc: 'Track current times worldwide with your own saved clocks.', icon: 'clock', ready: true },
   { id: 'json-tree-viewer', category: 'text', name: 'JSON Tree Viewer', desc: 'Explore JSON as a tree and filter nodes by keyword.', icon: 'braces', ready: true },
   { id: 'markdown-to-html', category: 'text', name: 'Markdown to HTML', desc: 'Convert Markdown to HTML with a live preview.', icon: 'code', ready: true },
   { id: 'dns-checker', category: 'web', name: 'DNS Checker', desc: 'Query and inspect DNS records for any domain.', icon: 'globe', ready: true },
@@ -46,17 +47,17 @@ export const TOOLS = [
   { id: 'itdog-ping', category: 'web', name: 'ITDOG Ping (vercel.app)', desc: 'Ping vercel.app from many locations across China.', favicon: 'favicon.ico', external: 'https://www.itdog.cn/ping/vercel.app', ready: true },
   { id: 'sqlite-browser', category: 'db', name: 'SQLite Browser', desc: 'View, edit and query SQLite database files.', favicon: 'favicon.ico', external: 'https://sqlite.ropean.org/', ready: true },
   { id: 'access-to-sqlite', category: 'db', name: 'Access to SQLite', desc: 'Convert Microsoft Access databases to SQLite.', favicon: 'favicon.svg', external: 'https://ats.ropean.org/', ready: true },
-  { id: 'chinese-id-toolkit', category: 'daily', name: 'Chinese ID Toolkit', desc: 'Validate, look up, generate and upgrade Chinese ID numbers.', favicon: 'favicon.svg', external: 'https://iv.ropean.org/', ready: true },
+  { id: 'chinese-id-toolkit', category: 'text', name: 'Chinese ID Toolkit', desc: 'Validate, look up, generate and upgrade Chinese ID numbers.', favicon: 'favicon.svg', external: 'https://iv.ropean.org/', ready: true },
   { id: 'logo-designer', category: 'media', name: 'Logo Designer', desc: 'Design logos in the browser.', favicon: 'favicon.svg', external: 'https://logo.ropean.org/', ready: true },
   { id: 'image-converter', category: 'media', name: 'Image Converter', desc: 'Convert images between formats.', favicon: 'favicon.ico', external: 'https://ic.ropean.org/', ready: true },
 
   // --- GitHub projects (open in a new tab) ---
-  { id: 'git-z', category: 'dev', name: 'git-z', desc: 'Visualize git repository history as an HTML report.', favicon: 'github', external: 'https://github.com/ropean/git-z', ready: true },
-  { id: 'qlint', category: 'dev', name: 'qlint', desc: 'Scan code quality across languages with rich reports.', favicon: 'github', external: 'https://github.com/ropean/qlint', ready: true },
-  { id: 'launchpad', category: 'dev', name: 'launchpad', desc: 'Start, stop and watch local dev projects from a GUI.', favicon: 'github', external: 'https://github.com/ropean/launchpad', ready: true },
-  { id: 'proxy', category: 'web', name: 'proxy', desc: 'Forward several local ports to one backend, rewriting Host.', favicon: 'github', external: 'https://github.com/ropean/proxy', ready: true },
-  { id: 'ports', category: 'web', name: 'ports', desc: 'See what is running on your ports from the CLI.', favicon: 'github', external: 'https://github.com/ropean/ports', ready: true },
-  { id: 'muze', category: 'media', name: 'muze', desc: 'Search Chinese music platforms and resolve playback URLs.', favicon: 'github', external: 'https://github.com/ropean/muze', ready: true },
+  { id: 'git-z', category: 'dev', name: 'Git-z', desc: 'Visualize git repository history as an HTML report.', favicon: 'github', external: 'https://github.com/ropean/git-z', ready: true },
+  { id: 'qlint', category: 'dev', name: 'Qlint', desc: 'Scan code quality across languages with rich reports.', favicon: 'github', external: 'https://github.com/ropean/qlint', ready: true },
+  { id: 'launchpad', category: 'dev', name: 'Launchpad', desc: 'Start, stop and watch local dev projects from a GUI.', favicon: 'github', external: 'https://github.com/ropean/launchpad', ready: true },
+  { id: 'proxy', category: 'web', name: 'Proxy', desc: 'Forward several local ports to one backend, rewriting Host.', favicon: 'github', external: 'https://github.com/ropean/proxy', ready: true },
+  { id: 'ports', category: 'web', name: 'Ports', desc: 'See what is running on your ports from the CLI.', favicon: 'github', external: 'https://github.com/ropean/ports', ready: true },
+  { id: 'muze', category: 'media', name: 'Muze', desc: 'Search Chinese music platforms and resolve playback URLs.', favicon: 'github', external: 'https://github.com/ropean/muze', ready: true },
 ];
 
 // The link target for a tool card / switcher entry: the external URL for

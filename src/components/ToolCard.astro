@@ -11,6 +11,7 @@ const external = !!tool.external;
   class="card"
   href={toolHref(tool)}
   data-tool
+  data-id={tool.id}
   data-category={tool.category}
   data-search={search}
   target={external ? '_blank' : undefined}
@@ -18,8 +19,13 @@ const external = !!tool.external;
 >
   <span class="card-top">
     <span class="card-icon"><ToolIcon tool={tool} /></span>
-    {external && <span class="badge badge-ext">External ↗</span>}
-    {!external && !tool.ready && <span class="badge">Coming soon</span>}
+    <span class="card-top-right">
+      {external && <span class="badge badge-ext">External ↗</span>}
+      {!external && !tool.ready && <span class="badge">Coming soon</span>}
+      <button type="button" class="fav-btn" data-fav aria-label="Add to favorites" aria-pressed="false">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5S3.5 15 3.5 8.9C3.5 6.1 5.7 4 8.4 4c1.7 0 3 .8 3.6 2c.6-1.2 1.9-2 3.6-2c2.7 0 4.9 2.1 4.9 4.9c0 6.1-8.5 11.6-8.5 11.6z"/></svg>
+      </button>
+    </span>
   </span>
   <span class="card-title"><span class="name">{tool.name}</span></span>
   <span class="card-desc">{tool.desc}</span>

@@ -200,6 +200,10 @@ textarea.field { resize: vertical; }
   cursor: pointer;
 }
 .chip[aria-pressed='true'] { background: var(--dark); color: var(--on-dark); border-color: var(--dark); }
+.chip-fav .chip-heart { display: inline-flex; color: #e0245e; }
+.chip-fav .chip-heart svg { width: 14px; height: 14px; }
+.chip-fav[aria-pressed='true'] .chip-heart { color: #fff; }
+.group-icon-fav { color: #e0245e; }
 
 /* --- Tool groups + cards --- */
 .groups { max-width: var(--max); margin: 0 auto; padding: 16px clamp(20px, 5vw, 40px) 80px; }
@@ -233,6 +237,15 @@ textarea.field { resize: vertical; }
 }
 .card:hover { border-color: var(--border-strong); transform: translateY(-2px); }
 .card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.card-top-right { display: flex; align-items: center; gap: 8px; }
+.fav-btn {
+  background: none; border: none; padding: 2px; margin: -2px; cursor: pointer;
+  color: var(--muted); display: inline-flex; line-height: 0; border-radius: 6px;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+.fav-btn:hover { color: #e0245e; background: var(--subtle); }
+.fav-btn[aria-pressed='true'] { color: #e0245e; }
+.fav-btn[aria-pressed='true'] svg { fill: #e0245e; }
 .card-icon {
   width: 36px;
   height: 36px;
