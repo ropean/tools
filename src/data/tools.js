@@ -67,9 +67,10 @@ export const TOOLS = [
   { id: 'timestamp-converter', category: 'calc', name: 'Timestamp Converter', desc: 'Convert between Unix timestamps and dates.', ready: false },
 ];
 
-// The visible link target for a tool card / switcher entry.
+// The link target for a tool card / switcher entry: always the wrapped in-site page.
+// Standalone tools (with `href`) are embedded inside that page via an iframe.
 export function toolHref(tool) {
-  return tool.href ?? `/tools/${tool.id}.html`;
+  return `/tools/${tool.id}.html`;
 }
 
 export function categoryLabel(key) {

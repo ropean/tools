@@ -271,6 +271,18 @@ a { color: inherit; }
 .placeholder h3 { font-size: 20px; font-weight: 600; margin: 0 0 8px; }
 .placeholder p { font-size: 14px; color: var(--muted); margin: 0 0 24px; }
 
+/* Embedded standalone tool */
+.tool-embed { display: flex; flex-direction: column; gap: 12px; }
+.embed-bar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.embed-bar p { font-size: 14px; color: var(--muted); margin: 0; }
+.tool-frame {
+  width: 100%;
+  min-height: calc(100vh - 220px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: #fff;
+}
+
 .related-list { display: flex; flex-direction: column; gap: 4px; }
 .related-item {
   display: flex;

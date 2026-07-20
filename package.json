@@ -22,11 +22,6 @@
     "ship:ci": "astro build && wrangler pages deploy ./_site --project-name=tools-ci --branch=main",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "devDependencies": {
-    "chokidar": "^5.0.0",
-    "concurrently": "^9.2.1",
-    "vite": "^7.3.1"
-  },
   "dependencies": {
     "astro": "^7.1.2"
   }

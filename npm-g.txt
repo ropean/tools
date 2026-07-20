@@ -1,4 +1,0 @@
-C:\Users\Robot-X\scoop\persist\nodejs22\bin
-+-- npm-check-updates@18.0.3
-`-- pm2@6.0.10
-
