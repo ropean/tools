@@ -1,0 +1,357 @@
+---
+import ToolLayout from '../layouts/ToolLayout.astro';
+import { TOOLS } from '../data/tools.js';
+
+const tool = TOOLS.find((t) => t.id === 'json-tree-viewer');
+---
+<ToolLayout tool={tool}>
+  <div class="jf">
+    <div class="jf-panes">
+      <div class="jf-pane jf-pane-in">
+        <span class="jf-label">Input</span>
+        <textarea class="field mono" id="jf-in" spellcheck="false" placeholder="Paste JSON here, then press Parse (or Ctrl/Cmd+Enter)."></textarea>
+        <div class="jf-toolbar">
+          <button type="button" class="btn btn-primary" id="jf-parse">Parse</button>
+          <button type="button" class="btn" id="jf-clear">Clear</button>
+        </div>
+      </div>
+
+      <div class="jf-pane jf-pane-out">
+        <div class="jf-outhead">
+          <span class="jf-label">Tree</span>
+          <div class="jf-search-box">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5f5f5d" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
+            <input type="text" class="field" id="jf-q" placeholder="Filter: keep only matching nodes…" autocomplete="off" />
+          </div>
+          <select class="field jf-scope" id="jf-scope" title="What to match">
+            <option value="both" selected>Keys &amp; values</option>
+            <option value="keys">Keys only</option>
+            <option value="values">Values only</option>
+          </select>
+          <label class="jf-case"><input type="checkbox" id="jf-case" /> Aa</label>
+          <button type="button" class="btn" id="jf-expand" title="Expand all">Expand</button>
+          <button type="button" class="btn" id="jf-collapse" title="Collapse all">Collapse</button>
+          <button type="button" class="btn" id="jf-copy" title="Copy shown JSON">Copy</button>
+        </div>
+        <div class="jf-tree-wrap">
+          <ul class="jf-tree" id="jf-tree"></ul>
+        </div>
+        <p class="jf-msg" id="jf-msg" hidden></p>
+      </div>
+    </div>
+  </div>
+</ToolLayout>
+
+<style>
+  .jf { display: flex; flex-direction: column; gap: 14px; }
+  .jf-panes { display: flex; flex-wrap: wrap; gap: 16px; align-items: stretch; }
+  .jf-pane { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .jf-pane-in { flex: 1 1 300px; }
+  .jf-pane-out { flex: 2 1 420px; }
+  .jf-label { font-size: 12px; color: var(--muted); }
+  .jf-pane-in textarea { flex: 1; min-height: 460px; }
+  .jf-toolbar { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  .jf-outhead { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .jf-search-box { position: relative; flex: 1 1 200px; min-width: 160px; }
+  .jf-search-box svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); pointer-events: none; }
+  .jf-search-box .field { padding-left: 38px; }
+  .jf-scope { width: auto; padding: 8px 10px; font-size: 13px; }
+  .jf-case { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; color: var(--muted); border: 1px solid var(--border); border-radius: var(--radius); padding: 7px 10px; cursor: pointer; }
+
+  .jf-tree-wrap {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--subtle-2);
+    padding: 12px 8px;
+    overflow: auto;
+    min-height: 420px;
+    max-height: calc(100vh - 260px);
+  }
+  .jf-tree, .jf-tree ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.7;
+  }
+  .jf-tree ul { padding-left: 18px; border-left: 1px solid var(--border); margin-left: 6px; }
+  .jf-row { display: flex; align-items: flex-start; gap: 4px; white-space: pre-wrap; word-break: break-word; }
+  .jf-toggle {
+    flex: 0 0 auto;
+    width: 16px; height: 20px;
+    background: none; border: none; padding: 0; cursor: pointer;
+    color: var(--muted); font-size: 11px; line-height: 20px;
+    user-select: none;
+  }
+  .jf-toggle.leaf { visibility: hidden; }
+  .jf-k { color: var(--fg); }
+  .jf-colon { color: var(--muted); }
+  .jf-str { color: #3f7d4e; }
+  .jf-num { color: #2d6a9f; }
+  .jf-bool { color: #8a5a00; }
+  .jf-null { color: var(--muted); }
+  .jf-meta { color: var(--muted); }
+  .jf-tree mark { background: var(--ring); color: inherit; border-radius: 2px; padding: 0 1px; }
+
+  .jf-msg { margin: 0; font-size: 13px; }
+  .jf-msg.error { color: var(--error); }
+  .jf-msg.ok { color: var(--muted); }
+</style>
+
+<script>
+  // JSON Tree Viewer — collapsible tree with keyword filtering.
+  //
+  // Filtering keeps only nodes whose key or value matches the keyword, plus their
+  // ancestor path, so the JSON tree structure is preserved (a key hit keeps its
+  // whole subtree).
+  //
+  // Performance:
+  //  - prune() is a single O(n) pass, run debounced.
+  //  - With no filter the tree renders lazily: a container's children are built
+  //    only when it is expanded, so multi-MB JSON opens instantly.
+  //  - A filtered result only ever builds the matched paths (small).
+  //  - A global node cap guards against pathological renders.
+  const $ = (id) => document.getElementById(id);
+  const inEl = $('jf-in');
+  const treeEl = $('jf-tree');
+  const qEl = $('jf-q');
+  const scopeEl = $('jf-scope');
+  const caseChk = $('jf-case');
+  const msgEl = $('jf-msg');
+
+  const NODE_CAP = 20000;
+  let rootData;          // parsed JSON
+  let shownData;         // currently displayed (filtered or full) — for Copy
+  let rendered = 0;      // node counter for the cap
+
+  function setMsg(text, kind) {
+    if (!text) { msgEl.hidden = true; msgEl.textContent = ''; return; }
+    msgEl.hidden = false;
+    msgEl.textContent = text;
+    msgEl.className = 'jf-msg ' + (kind || '');
+  }
+
+  const isObj = (v) => v !== null && typeof v === 'object';
+
+  // --- highlight helper: build DOM (no innerHTML) with <mark> around matches ---
+  function withMarks(text, kw, cs) {
+    const frag = document.createDocumentFragment();
+    if (!kw) { frag.appendChild(document.createTextNode(text)); return frag; }
+    const hay = cs ? text : text.toLowerCase();
+    const needle = cs ? kw : kw.toLowerCase();
+    let from = 0, i = hay.indexOf(needle);
+    if (i === -1) { frag.appendChild(document.createTextNode(text)); return frag; }
+    while (i !== -1) {
+      if (i > from) frag.appendChild(document.createTextNode(text.slice(from, i)));
+      const m = document.createElement('mark');
+      m.textContent = text.slice(i, i + needle.length);
+      frag.appendChild(m);
+      from = i + needle.length;
+      i = hay.indexOf(needle, from);
+    }
+    if (from < text.length) frag.appendChild(document.createTextNode(text.slice(from)));
+    return frag;
+  }
+
+  function valueSpan(value, kw, cs) {
+    const span = document.createElement('span');
+    if (typeof value === 'string') { span.className = 'jf-str'; span.appendChild(withMarks(JSON.stringify(value), kw, cs)); }
+    else if (typeof value === 'number') { span.className = 'jf-num'; span.appendChild(withMarks(String(value), kw, cs)); }
+    else if (typeof value === 'boolean') { span.className = 'jf-bool'; span.textContent = String(value); }
+    else if (value === null) { span.className = 'jf-null'; span.textContent = 'null'; }
+    return span;
+  }
+
+  function metaText(value) {
+    if (Array.isArray(value)) return '[ ' + value.length + ' ]';
+    return '{ ' + Object.keys(value).length + ' }';
+  }
+
+  // Build one <li> for (key,value). ctx: { kw, cs, expand }  (expand: force-open)
+  function makeNode(key, value, ctx) {
+    if (++rendered > NODE_CAP) return null;
+
+    const li = document.createElement('li');
+    const row = document.createElement('div');
+    row.className = 'jf-row';
+
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.className = 'jf-toggle';
+    row.appendChild(toggle);
+
+    if (key !== null) {
+      const k = document.createElement('span');
+      k.className = 'jf-k';
+      k.appendChild(withMarks(JSON.stringify(key), ctx.kw, ctx.cs));
+      row.appendChild(k);
+      const colon = document.createElement('span');
+      colon.className = 'jf-colon';
+      colon.textContent = ': ';
+      row.appendChild(colon);
+    }
+
+    if (isObj(value)) {
+      const meta = document.createElement('span');
+      meta.className = 'jf-meta';
+      meta.textContent = metaText(value);
+      row.appendChild(meta);
+      li.appendChild(row);
+
+      const ul = document.createElement('ul');
+      ul.hidden = true;
+      li.appendChild(ul);
+
+      let built = false;
+      const build = () => {
+        if (built) return;
+        built = true;
+        const entries = Array.isArray(value)
+          ? value.map((v, i) => [i, v])
+          : Object.entries(value);
+        for (const [k, v] of entries) {
+          const child = makeNode(Array.isArray(value) ? null : k, v, ctx);
+          if (!child) { const more = document.createElement('li'); more.className = 'jf-meta'; more.textContent = '… output truncated (too many nodes)'; ul.appendChild(more); break; }
+          ul.appendChild(child);
+        }
+      };
+      const setOpen = (open) => {
+        if (open) build();
+        ul.hidden = !open;
+        toggle.textContent = open ? '▾' : '▸';
+        toggle.setAttribute('aria-expanded', String(open));
+      };
+      toggle.addEventListener('click', () => setOpen(ul.hidden));
+      setOpen(!!ctx.expand);
+    } else {
+      toggle.classList.add('leaf');
+      row.appendChild(valueSpan(value, ctx.kw, ctx.cs));
+      li.appendChild(row);
+    }
+    return li;
+  }
+
+  function render(data, ctx) {
+    rendered = 0;
+    treeEl.textContent = '';
+    if (data === undefined) return;
+    // A root that is itself a primitive still gets a single leaf row.
+    const node = makeNode(null, data, ctx);
+    if (node) treeEl.appendChild(node);
+  }
+
+  // --- prune: return { keep, value } filtered copy preserving ancestor paths ---
+  function makeMatcher(kw, cs) {
+    const needle = cs ? kw : kw.toLowerCase();
+    return (text) => (cs ? text : text.toLowerCase()).includes(needle);
+  }
+
+  function prune(value, key, hit, scope) {
+    // key match keeps the entire subtree.
+    if (key !== null && scope !== 'values' && hit(String(key))) {
+      return { keep: true, value };
+    }
+    if (isObj(value)) {
+      if (Array.isArray(value)) {
+        const out = [];
+        for (const v of value) {
+          const r = prune(v, null, hit, scope);
+          if (r.keep) out.push(r.value);
+        }
+        return { keep: out.length > 0, value: out };
+      }
+      const out = {};
+      let kept = false;
+      for (const [k, v] of Object.entries(value)) {
+        const r = prune(v, k, hit, scope);
+        if (r.keep) { out[k] = r.value; kept = true; }
+      }
+      return { keep: kept, value: out };
+    }
+    // primitive value
+    if (scope !== 'keys' && hit(valueText(value))) return { keep: true, value };
+    return { keep: false, value };
+  }
+
+  function valueText(value) {
+    return typeof value === 'string' ? value : String(value);
+  }
+
+  // --- actions ---
+  function parse() {
+    const raw = inEl.value.trim();
+    if (!raw) { rootData = undefined; shownData = undefined; treeEl.textContent = ''; setMsg('', ''); return; }
+    try {
+      rootData = JSON.parse(raw);
+    } catch (err) {
+      setMsg('Invalid JSON: ' + err.message, 'error');
+      return;
+    }
+    setMsg('Valid JSON', 'ok');
+    applyFilter();
+  }
+
+  function applyFilter() {
+    if (rootData === undefined) return;
+    const kw = qEl.value;
+    const cs = caseChk.checked;
+    if (!kw) {
+      shownData = rootData;
+      render(rootData, { kw: '', cs, expand: false }); // lazy, collapsed
+      // open the root level for convenience
+      const firstToggle = treeEl.querySelector('.jf-toggle:not(.leaf)');
+      if (firstToggle) firstToggle.click();
+      setMsg('Valid JSON', 'ok');
+      return;
+    }
+    const hit = makeMatcher(kw, cs);
+    const r = prune(rootData, null, hit, scopeEl.value);
+    shownData = r.keep ? r.value : (Array.isArray(rootData) ? [] : {});
+    if (!r.keep) {
+      treeEl.textContent = '';
+      setMsg('No nodes match “' + kw + '”.', 'ok');
+      return;
+    }
+    render(shownData, { kw, cs, expand: true }); // filtered → fully expanded + highlighted
+    setMsg('Filtered by “' + kw + '”', 'ok');
+  }
+
+  function setAllOpen(open) {
+    if (rootData === undefined) return;
+    // Re-render with expand flag (builds every node once). For huge trees the
+    // node cap keeps this bounded.
+    const kw = qEl.value;
+    const cs = caseChk.checked;
+    const data = shownData ?? rootData;
+    render(data, { kw, cs, expand: open });
+  }
+
+  let t;
+  const debounced = () => { clearTimeout(t); t = setTimeout(applyFilter, 200); };
+
+  $('jf-parse').addEventListener('click', parse);
+  $('jf-clear').addEventListener('click', () => {
+    inEl.value = ''; qEl.value = ''; rootData = undefined; shownData = undefined;
+    treeEl.textContent = ''; setMsg('', ''); inEl.focus();
+  });
+  inEl.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); parse(); }
+  });
+  inEl.addEventListener('paste', () => setTimeout(parse, 0));
+
+  qEl.addEventListener('input', debounced);
+  scopeEl.addEventListener('change', applyFilter);
+  caseChk.addEventListener('change', applyFilter);
+  $('jf-expand').addEventListener('click', () => setAllOpen(true));
+  $('jf-collapse').addEventListener('click', () => setAllOpen(false));
+  $('jf-copy').addEventListener('click', async () => {
+    if (shownData === undefined) return;
+    await navigator.clipboard.writeText(JSON.stringify(shownData, null, 2));
+    const btn = $('jf-copy');
+    const prev = btn.textContent;
+    btn.textContent = 'Copied';
+    setTimeout(() => { btn.textContent = prev; }, 1200);
+  });
+</script>
