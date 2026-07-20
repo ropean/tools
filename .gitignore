@@ -111,3 +111,6 @@ debug.js
 debug2.js
 simple.js
 test.js.claude/
+
+# Astro generated
+.astro/
