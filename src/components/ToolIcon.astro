@@ -8,9 +8,16 @@ import CategoryIcon from './CategoryIcon.astro';
 
 const { tool, size = 20 } = Astro.props;
 
-let faviconUrl = null;
-if (tool.external) {
-  try { faviconUrl = new URL('/favicon.svg', tool.external).href; } catch { /* bad URL */ }
+// Favicon candidates, tried in order; on the last failure we fall back to the
+// category icon. Use tool.favicon to override (e.g. GitHub's asset-host icon).
+let favicons = [];
+if (tool.favicon) {
+  favicons = [tool.favicon];
+} else if (tool.external) {
+  try {
+    const origin = new URL(tool.external).origin;
+    favicons = [origin + '/favicon.svg', origin + '/favicon.ico'];
+  } catch { /* bad URL */ }
 }
 
 const svg = {
@@ -25,10 +32,10 @@ const svg = {
 };
 const name = tool.icon;
 ---
-{faviconUrl ? (
+{favicons.length ? (
   <span class="ti-fav">
-    <img src={faviconUrl} alt="" width={size + 2} height={size + 2} loading="lazy"
-         onerror="this.closest('.ti-fav').classList.add('failed')" />
+    <img src={favicons[0]} data-next={favicons[1] ?? ''} alt="" width={size + 2} height={size + 2} loading="lazy"
+         onerror="var n=this.dataset.next; if(n){this.dataset.next='';this.src=n;}else{this.closest('.ti-fav').classList.add('failed');}" />
     <span class="ti-fallback"><CategoryIcon category={tool.category} size={size} /></span>
   </span>
 ) : name === 'globe' ? (

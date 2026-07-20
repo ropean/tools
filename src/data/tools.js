@@ -5,6 +5,10 @@
 //                          generated at /<id>.html by src/pages/[id].astro.
 //  - external:'https://…' → an off-site tool: links straight to that URL in a new
 //                          tab, marked "External ↗"; no in-site page is generated.
+//                          Its icon is the site's favicon (svg, then ico), falling
+//                          back to the category icon.
+//  - favicon:'https://…'  → override the favicon URL (e.g. GitHub's asset host).
+//  - icon:'name'          → named icon for an internal tool (see ToolIcon.astro).
 // Non-external entries link to /<id>.html at the site root (see toolHref).
 
 export const CATEGORIES = [
@@ -84,12 +88,12 @@ export const TOOLS = [
   { id: 'peek', category: 'dev', name: 'Peek', desc: 'HTTP inspector and API debugging tool.', external: 'https://peek.aceapp.dev/', ready: true },
 
   // --- GitHub projects (open in a new tab) ---
-  { id: 'git-z', category: 'dev', name: 'git-z', desc: 'Visualize a git repository history as a self-contained HTML report.', external: 'https://github.com/ropean/git-z', ready: true },
-  { id: 'qlint', category: 'dev', name: 'qlint', desc: 'Multi-language code quality scanner with HTML/JSON/Markdown reports.', external: 'https://github.com/ropean/qlint', ready: true },
-  { id: 'proxy', category: 'dev', name: 'proxy', desc: 'Tiny local reverse-proxy: forward several ports to one backend, rewriting Host.', external: 'https://github.com/ropean/proxy', ready: true },
-  { id: 'ports', category: 'dev', name: 'ports', desc: 'See what is running on your ports — a color-coded CLI.', external: 'https://github.com/ropean/ports', ready: true },
-  { id: 'launchpad', category: 'dev', name: 'launchpad', desc: 'Cross-platform GUI to start, stop and watch local dev projects.', external: 'https://github.com/ropean/launchpad', ready: true },
-  { id: 'muze', category: 'media', name: 'muze', desc: 'Search Chinese music platforms and resolve playback URLs.', external: 'https://github.com/ropean/muze', ready: true },
+  { id: 'git-z', category: 'dev', name: 'git-z', desc: 'Visualize a git repository history as a self-contained HTML report.', favicon: 'https://github.githubassets.com/favicons/favicon.svg', external: 'https://github.com/ropean/git-z', ready: true },
+  { id: 'qlint', category: 'dev', name: 'qlint', desc: 'Multi-language code quality scanner with HTML/JSON/Markdown reports.', favicon: 'https://github.githubassets.com/favicons/favicon.svg', external: 'https://github.com/ropean/qlint', ready: true },
+  { id: 'proxy', category: 'dev', name: 'proxy', desc: 'Tiny local reverse-proxy: forward several ports to one backend, rewriting Host.', favicon: 'https://github.githubassets.com/favicons/favicon.svg', external: 'https://github.com/ropean/proxy', ready: true },
+  { id: 'ports', category: 'dev', name: 'ports', desc: 'See what is running on your ports — a color-coded CLI.', favicon: 'https://github.githubassets.com/favicons/favicon.svg', external: 'https://github.com/ropean/ports', ready: true },
+  { id: 'launchpad', category: 'dev', name: 'launchpad', desc: 'Cross-platform GUI to start, stop and watch local dev projects.', favicon: 'https://github.githubassets.com/favicons/favicon.svg', external: 'https://github.com/ropean/launchpad', ready: true },
+  { id: 'muze', category: 'media', name: 'muze', desc: 'Search Chinese music platforms and resolve playback URLs.', favicon: 'https://github.githubassets.com/favicons/favicon.svg', external: 'https://github.com/ropean/muze', ready: true },
   { id: 'itdog-ping', category: 'dev', name: 'ITDOG Ping (vercel.app)', desc: 'Ping vercel.app from many locations across China (via ITDOG).', external: 'https://www.itdog.cn/ping/vercel.app', ready: true },
 ];
 
