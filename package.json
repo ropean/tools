@@ -15,16 +15,19 @@
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
-    "build": "node build.js",
-    "dev": "concurrently \"node dev.js\" \"vite\"",
-    "preview": "node build.js && vite",
-    "ship": "wrangler pages deploy ./_site --project-name=tools --branch=main",
-    "ship:ci": "wrangler pages deploy ./_site --project-name=tools-ci --branch=main",
+    "build": "astro build",
+    "dev": "astro dev",
+    "preview": "astro build && astro preview",
+    "ship": "astro build && wrangler pages deploy ./_site --project-name=tools --branch=main",
+    "ship:ci": "astro build && wrangler pages deploy ./_site --project-name=tools-ci --branch=main",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "devDependencies": {
     "chokidar": "^5.0.0",
     "concurrently": "^9.2.1",
     "vite": "^7.3.1"
+  },
+  "dependencies": {
+    "astro": "^7.1.2"
   }
 }

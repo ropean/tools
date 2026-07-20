@@ -1,0 +1,135 @@
+---
+import Base from '../../layouts/Base.astro';
+import CategoryIcon from '../../components/CategoryIcon.astro';
+import { TOOLS, categoryLabel, groupByCategory, toolHref } from '../../data/tools.js';
+
+// One page per tool that does NOT link to an external standalone HTML.
+export function getStaticPaths() {
+  return TOOLS.filter((t) => !t.href).map((tool) => ({
+    params: { id: tool.id },
+    props: { tool },
+  }));
+}
+
+const { tool } = Astro.props;
+const catLabel = categoryLabel(tool.category);
+const related = TOOLS.filter((t) => t.category === tool.category && t.id !== tool.id).slice(0, 5);
+const switcherGroups = groupByCategory();
+---
+<Base title={`${tool.name} · QingTools`} description={tool.desc}>
+  <div class="tool-page">
+    <p class="breadcrumb">
+      <a href="/">Home</a> / {catLabel} / {tool.name}
+    </p>
+
+    <div class="tool-toolbar">
+      <a class="btn" href="/">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        All tools
+      </a>
+
+      <div style="position:relative;">
+        <button type="button" class="btn btn-ghost" data-switcher-toggle style="gap:10px;">
+          <span class="mini-icon"><CategoryIcon category={tool.category} /></span>
+          <span style="display:flex;flex-direction:column;align-items:flex-start;">
+            <span style="font-size:11px;color:var(--muted);">{catLabel}</span>
+            <span style="font-size:15px;font-weight:600;">{tool.name}</span>
+          </span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5f5f5d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+
+        <div class="switcher" data-switcher hidden style="position:absolute;right:0;top:calc(100% + 8px);width:320px;max-height:420px;overflow-y:auto;background:var(--bg);border:1px solid var(--border);border-radius:12px;box-shadow:rgba(0,0,0,0.1) 0 4px 12px;z-index:41;">
+          <div style="padding:12px;border-bottom:1px solid var(--border);">
+            <input type="text" class="field" data-switcher-search placeholder="Search tools…" style="padding:8px 10px;font-size:14px;" autocomplete="off" />
+          </div>
+          {switcherGroups.map((group) => (
+            <div data-switcher-group={group.key}>
+              <div style="padding:10px 12px 4px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;">{group.label}</div>
+              {group.tools.map((t) => (
+                <a
+                  class="related-item"
+                  href={toolHref(t)}
+                  data-switcher-item
+                  data-search={`${t.name} ${t.desc}`.toLowerCase()}
+                  style="padding:9px 12px;"
+                >
+                  <span class="mini-icon"><CategoryIcon category={t.category} /></span>
+                  {t.name}
+                  {!t.ready && <span style="margin-left:auto;font-size:10px;color:var(--muted);">Coming soon</span>}
+                </a>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+
+    <div class="tool-body">
+      <div class="tool-main">
+        <div class="placeholder">
+          <span class="card-icon" style="width:48px;height:48px;border-radius:12px;margin:0 auto 16px;"><CategoryIcon category={tool.category} size={22} /></span>
+          <h3>{tool.name}</h3>
+          <p>{tool.desc}</p>
+          <div style="max-width:360px;margin:0 auto;display:flex;flex-direction:column;gap:10px;opacity:0.5;pointer-events:none;">
+            <div style="height:38px;border-radius:6px;border:1px solid var(--border);background:var(--bg);"></div>
+            <div style="height:38px;border-radius:6px;background:var(--dark);"></div>
+          </div>
+          <p style="margin-top:20px;">This tool is under construction. Meanwhile, browse the <a href="/" style="color:var(--fg);text-decoration:underline;">tools that are already live</a>.</p>
+        </div>
+      </div>
+
+      <div class="tool-side">
+        <div class="panel">
+          <h3>About this tool</h3>
+          <p>{tool.desc}</p>
+        </div>
+        {related.length > 0 && (
+          <div class="panel">
+            <h3 style="margin-bottom:12px;">Related tools</h3>
+            <div class="related-list">
+              {related.map((rt) => (
+                <a class="related-item" href={toolHref(rt)}>
+                  <span class="mini-icon"><CategoryIcon category={rt.category} /></span>
+                  {rt.name}
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  </div>
+</Base>
+
+<script>
+  // Tool switcher: open/close, close on outside click, and filter by search text.
+  const toggle = document.querySelector('[data-switcher-toggle]');
+  const panel = document.querySelector('[data-switcher]');
+  const searchInput = document.querySelector('[data-switcher-search]');
+  const items = Array.from(document.querySelectorAll('[data-switcher-item]'));
+  const groups = Array.from(document.querySelectorAll('[data-switcher-group]'));
+
+  function close() { if (panel) panel.hidden = true; }
+
+  toggle?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (panel) {
+      panel.hidden = !panel.hidden;
+      if (!panel.hidden) searchInput?.focus();
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    if (panel && !panel.hidden && !panel.contains(e.target) && !toggle?.contains(e.target)) close();
+  });
+
+  searchInput?.addEventListener('input', () => {
+    const q = searchInput.value.trim().toLowerCase();
+    for (const item of items) {
+      item.hidden = q && !(item.dataset.search || '').includes(q);
+    }
+    for (const group of groups) {
+      group.hidden = !group.querySelector('[data-switcher-item]:not([hidden])');
+    }
+  });
+</script>

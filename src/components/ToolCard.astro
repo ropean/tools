@@ -1,0 +1,23 @@
+---
+// A single tool card on the home page.
+import CategoryIcon from './CategoryIcon.astro';
+import { toolHref } from '../data/tools.js';
+
+const { tool } = Astro.props;
+// Lowercased haystack used by the client-side search filter.
+const search = `${tool.name} ${tool.desc}`.toLowerCase();
+---
+<a
+  class="card"
+  href={toolHref(tool)}
+  data-tool
+  data-category={tool.category}
+  data-search={search}
+>
+  <span class="card-icon"><CategoryIcon category={tool.category} /></span>
+  <span class="card-title">
+    <span class="name">{tool.name}</span>
+    {!tool.ready && <span class="badge">Coming soon</span>}
+  </span>
+  <span class="card-desc">{tool.desc}</span>
+</a>

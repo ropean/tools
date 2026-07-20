@@ -1,0 +1,87 @@
+---
+import Base from '../layouts/Base.astro';
+import CategoryIcon from '../components/CategoryIcon.astro';
+import ToolCard from '../components/ToolCard.astro';
+import { CATEGORIES, groupByCategory } from '../data/tools.js';
+
+const groups = groupByCategory();
+---
+<Base title="QingTools · handy little tools" description="A pocketful of small, ready-to-use online tools for developers and everyday tasks." current="home">
+  <section class="hero">
+    <p class="eyebrow">For work · dev · everyday</p>
+    <h1>Finding a tool should feel like reaching into your pocket</h1>
+    <p>QingTools collects small, good-enough, open-in-a-tap online tools. Growing all the time.</p>
+    <div class="search">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5f5f5d" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
+      <input type="text" id="search" placeholder="Search tools, e.g. JSON, QR code, unit converter…" autocomplete="off" />
+    </div>
+  </section>
+
+  <div class="chips" id="chips">
+    <button type="button" class="chip" data-filter="all" aria-pressed="true">All</button>
+    {CATEGORIES.map((cat) => (
+      <button type="button" class="chip" data-filter={cat.key} aria-pressed="false">
+        <CategoryIcon category={cat.key} />
+        {cat.label}
+      </button>
+    ))}
+  </div>
+
+  <div class="groups" id="groups">
+    {groups.map((group) => (
+      <section class="group" data-group={group.key}>
+        <div class="group-head">
+          <span class="group-icon"><CategoryIcon category={group.key} /></span>
+          <h2>{group.label}</h2>
+          <span class="group-count">{group.tools.length}</span>
+        </div>
+        <div class="card-grid">
+          {group.tools.map((tool) => <ToolCard tool={tool} />)}
+        </div>
+      </section>
+    ))}
+    <div class="empty" id="empty" hidden>No tools match your search. Try a different keyword.</div>
+  </div>
+</Base>
+
+<script>
+  // Home filtering: category chips + free-text search, applied entirely client-side.
+  const search = document.getElementById('search');
+  const chips = Array.from(document.querySelectorAll('#chips .chip'));
+  const groups = Array.from(document.querySelectorAll('#groups [data-group]'));
+  const cards = Array.from(document.querySelectorAll('#groups [data-tool]'));
+  const empty = document.getElementById('empty');
+
+  let activeCategory = 'all';
+
+  function apply() {
+    const query = (search?.value || '').trim().toLowerCase();
+    let visibleTotal = 0;
+
+    for (const card of cards) {
+      const matchCat = activeCategory === 'all' || card.dataset.category === activeCategory;
+      const matchText = !query || (card.dataset.search || '').includes(query);
+      const show = matchCat && matchText;
+      card.hidden = !show;
+      if (show) visibleTotal++;
+    }
+
+    // Hide groups that have no visible cards.
+    for (const group of groups) {
+      const anyVisible = group.querySelector('[data-tool]:not([hidden])');
+      group.hidden = !anyVisible;
+    }
+
+    if (empty) empty.hidden = visibleTotal > 0;
+  }
+
+  search?.addEventListener('input', apply);
+
+  for (const chip of chips) {
+    chip.addEventListener('click', () => {
+      activeCategory = chip.dataset.filter;
+      for (const c of chips) c.setAttribute('aria-pressed', String(c === chip));
+      apply();
+    });
+  }
+</script>
