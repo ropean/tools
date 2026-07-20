@@ -5,10 +5,10 @@
 //                          generated at /<id>.html by src/pages/[id].astro.
 //  - external:'https://…' → an off-site tool: links straight to that URL in a new
 //                          tab, marked "External ↗"; no in-site page is generated.
-//  - favicon:'svg'|'ico'|'github'|url → explicit card icon (no auto-guessing):
-//                          'svg'/'ico' → <external origin>/favicon.svg|.ico; a known
-//                          alias (see ToolIcon FAVICON_ALIASES); or a full URL.
-//                          Without it, the category icon is used.
+//  - favicon → explicit card icon (no auto-guessing): a filename/path resolved
+//                          against the external origin ('favicon.svg', 'icon.png'),
+//                          a full URL, or a known alias ('github'). Without it, the
+//                          category icon is used.
 //  - icon:'name'          → named icon for an internal tool (see ToolIcon.astro).
 // Non-external entries link to /<id>.html at the site root (see toolHref).
 
@@ -70,23 +70,23 @@ export const TOOLS = [
   { id: 'text-diff', category: 'text', name: 'Text Diff', desc: 'Highlight the differences between two texts.', ready: false },
   { id: 'regex-tester', category: 'dev', name: 'Regex Tester', desc: 'Test regular expressions against text in real time.', ready: false },
   { id: 'cron-builder', category: 'dev', name: 'Cron Builder', desc: 'Build cron schedule expressions visually.', ready: false },
-  { id: 'image-converter', category: 'media', name: 'Image Converter', desc: 'Convert images between formats. Opens ic.ropean.org.', favicon: 'svg', external: 'https://ic.ropean.org/', ready: true },
+  { id: 'image-converter', category: 'media', name: 'Image Converter', desc: 'Convert images between formats. Opens ic.ropean.org.', favicon: 'favicon.svg', external: 'https://ic.ropean.org/', ready: true },
   { id: 'qr-generator', category: 'media', name: 'QR Code Generator', desc: 'Turn text or a link into a downloadable QR code (PNG or SVG).', icon: 'qr', ready: true },
   { id: 'unit-converter', category: 'calc', name: 'Unit Converter', desc: 'Convert length, weight, temperature and more.', ready: false },
   { id: 'world-clock', category: 'daily', name: 'World Clock', desc: 'See the current time around the world; add your own clocks, saved locally.', icon: 'clock', ready: true },
 
   // --- External tools (off-site, open in a new tab). Titles/descriptions taken
   //     from the live pages. ---
-  { id: 'jwt-decoder', category: 'dev', name: 'JWT Decoder', desc: 'Decode and inspect JSON Web Tokens.', favicon: 'svg', external: 'https://jwt.ropean.org/', ready: true },
-  { id: 'sqlite-browser', category: 'dev', name: 'SQLite Browser', desc: 'View, edit and query SQLite database files.', favicon: 'svg', external: 'https://sqlite.ropean.org/', ready: true },
-  { id: 'access-to-sqlite', category: 'dev', name: 'Access to SQLite', desc: 'Convert Microsoft Access databases (.mdb/.accdb) to SQLite.', favicon: 'svg', external: 'https://ats.ropean.org/', ready: true },
-  { id: 'seo-indexnow', category: 'dev', name: 'SEO IndexNow Submit', desc: 'Submit URLs to search engines (Bing, Yandex, Google, Baidu) via IndexNow.', favicon: 'svg', external: 'https://seo.ropean.org/', ready: true },
-  { id: 'api-hub', category: 'dev', name: 'API Hub', desc: 'Browse and try the API (RapiDoc & Hoppscotch).', favicon: 'svg', external: 'https://api.ropean.org/', ready: true },
-  { id: 'cf-contact-script', category: 'dev', name: 'CF Contact Script Generator', desc: 'Generate a Cloudflare console script to batch-update domain registrar contacts.', favicon: 'svg', external: 'https://cf.ropean.org/', ready: true },
-  { id: 'markitdown', category: 'text', name: 'MarkItDown', desc: 'Convert any file or URL to clean Markdown.', favicon: 'svg', external: 'https://md.ropean.org/', ready: true },
-  { id: 'chinese-id-toolkit', category: 'daily', name: 'Chinese ID Toolkit', desc: 'Validate, look up, generate and upgrade Chinese ID numbers.', favicon: 'svg', external: 'https://iv.ropean.org/', ready: true },
-  { id: 'logo-designer', category: 'media', name: 'Logo Designer', desc: 'Design logos in the browser.', favicon: 'svg', external: 'https://logo.ropean.org/', ready: true },
-  { id: 'peek', category: 'dev', name: 'Peek', desc: 'HTTP inspector and API debugging tool.', favicon: 'svg', external: 'https://peek.aceapp.dev/', ready: true },
+  { id: 'jwt-decoder', category: 'dev', name: 'JWT Decoder', desc: 'Decode and inspect JSON Web Tokens.', favicon: 'favicon.svg', external: 'https://jwt.ropean.org/', ready: true },
+  { id: 'sqlite-browser', category: 'dev', name: 'SQLite Browser', desc: 'View, edit and query SQLite database files.', favicon: 'favicon.svg', external: 'https://sqlite.ropean.org/', ready: true },
+  { id: 'access-to-sqlite', category: 'dev', name: 'Access to SQLite', desc: 'Convert Microsoft Access databases (.mdb/.accdb) to SQLite.', favicon: 'favicon.svg', external: 'https://ats.ropean.org/', ready: true },
+  { id: 'seo-indexnow', category: 'dev', name: 'SEO IndexNow Submit', desc: 'Submit URLs to search engines (Bing, Yandex, Google, Baidu) via IndexNow.', favicon: 'favicon.svg', external: 'https://seo.ropean.org/', ready: true },
+  { id: 'api-hub', category: 'dev', name: 'API Hub', desc: 'Browse and try the API (RapiDoc & Hoppscotch).', favicon: 'favicon.svg', external: 'https://api.ropean.org/', ready: true },
+  { id: 'cf-contact-script', category: 'dev', name: 'CF Contact Script Generator', desc: 'Generate a Cloudflare console script to batch-update domain registrar contacts.', favicon: 'favicon.svg', external: 'https://cf.ropean.org/', ready: true },
+  { id: 'markitdown', category: 'text', name: 'MarkItDown', desc: 'Convert any file or URL to clean Markdown.', favicon: 'favicon.svg', external: 'https://md.ropean.org/', ready: true },
+  { id: 'chinese-id-toolkit', category: 'daily', name: 'Chinese ID Toolkit', desc: 'Validate, look up, generate and upgrade Chinese ID numbers.', favicon: 'favicon.svg', external: 'https://iv.ropean.org/', ready: true },
+  { id: 'logo-designer', category: 'media', name: 'Logo Designer', desc: 'Design logos in the browser.', favicon: 'favicon.svg', external: 'https://logo.ropean.org/', ready: true },
+  { id: 'peek', category: 'dev', name: 'Peek', desc: 'HTTP inspector and API debugging tool.', favicon: 'favicon.svg', external: 'https://peek.aceapp.dev/', ready: true },
 
   // --- GitHub projects (open in a new tab) ---
   { id: 'git-z', category: 'dev', name: 'git-z', desc: 'Visualize a git repository history as a self-contained HTML report.', favicon: 'github', external: 'https://github.com/ropean/git-z', ready: true },
@@ -95,7 +95,7 @@ export const TOOLS = [
   { id: 'ports', category: 'dev', name: 'ports', desc: 'See what is running on your ports — a color-coded CLI.', favicon: 'github', external: 'https://github.com/ropean/ports', ready: true },
   { id: 'launchpad', category: 'dev', name: 'launchpad', desc: 'Cross-platform GUI to start, stop and watch local dev projects.', favicon: 'github', external: 'https://github.com/ropean/launchpad', ready: true },
   { id: 'muze', category: 'media', name: 'muze', desc: 'Search Chinese music platforms and resolve playback URLs.', favicon: 'github', external: 'https://github.com/ropean/muze', ready: true },
-  { id: 'itdog-ping', category: 'dev', name: 'ITDOG Ping (vercel.app)', desc: 'Ping vercel.app from many locations across China (via ITDOG).', favicon: 'ico', external: 'https://www.itdog.cn/ping/vercel.app', ready: true },
+  { id: 'itdog-ping', category: 'dev', name: 'ITDOG Ping (vercel.app)', desc: 'Ping vercel.app from many locations across China (via ITDOG).', favicon: 'favicon.ico', external: 'https://www.itdog.cn/ping/vercel.app', ready: true },
 ];
 
 // The link target for a tool card / switcher entry: the external URL for

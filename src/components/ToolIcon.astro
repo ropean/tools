@@ -14,18 +14,19 @@ const FAVICON_ALIASES = {
 };
 
 // Resolve tool.favicon explicitly — no auto-guessing:
-//   'github'    → alias URL
-//   'svg'/'ico' → <external origin>/favicon.svg | .ico
-//   full URL    → used as-is
+//   known alias ('github')     → alias URL
+//   full URL ('https://…')     → used as-is
+//   filename/path ('favicon.svg', 'assets/icon.png') → resolved against the
+//                                external site's origin
 // A tool without `favicon` just uses its icon / category icon.
 let faviconUrl = null;
 if (tool.favicon) {
   if (FAVICON_ALIASES[tool.favicon]) {
     faviconUrl = FAVICON_ALIASES[tool.favicon];
-  } else if ((tool.favicon === 'svg' || tool.favicon === 'ico') && tool.external) {
-    try { faviconUrl = new URL(tool.external).origin + '/favicon.' + tool.favicon; } catch { /* bad URL */ }
-  } else {
+  } else if (/^https?:\/\//.test(tool.favicon)) {
     faviconUrl = tool.favicon;
+  } else if (tool.external) {
+    try { faviconUrl = new URL(tool.favicon, new URL(tool.external).origin + '/').href; } catch { /* bad URL */ }
   }
 }
 
