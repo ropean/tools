@@ -81,7 +81,8 @@ const tool = TOOLS.find((t) => t.id === 'world-clock');
 <script>
   // World Clock — live clocks for fixed UTC offsets, saved in localStorage.
   // Offsets are DST-free by design (a clock is just "UTC + N minutes").
-  const KEY = 'world-clock.v2';
+  const KEY = 'world-clock';
+  const LEGACY_KEYS = ['world-clock.v1', 'world-clock.v2'];
 
   // Real-world UTC offsets in minutes, from -12:00 to +14:00.
   const OFFSETS = [
@@ -89,6 +90,9 @@ const tool = TOOLS.find((t) => t.id === 'world-clock');
     -120, -60, 0, 60, 120, 180, 210, 240, 270, 300, 330, 345, 360, 390, 420,
     480, 525, 540, 570, 600, 630, 660, 720, 765, 780, 840,
   ];
+
+  // Current local UTC offset in minutes (east of UTC positive).
+  const LOCAL = -new Date().getTimezoneOffset();
 
   const $ = (id) => document.getElementById(id);
   const grid = $('wc-grid');
@@ -99,13 +103,22 @@ const tool = TOOLS.find((t) => t.id === 'world-clock');
 
   // { offsets: number[] (minutes), hour12: boolean }
   let state = load();
+  save(); // persist under the current key (also finalizes any migration)
+
+  function readKey(k) {
+    try {
+      const p = JSON.parse(localStorage.getItem(k) || '');
+      if (p && Array.isArray(p.offsets)) return { offsets: p.offsets, hour12: !!p.hour12 };
+    } catch { /* ignore corrupt/empty */ }
+    return null;
+  }
 
   function load() {
-    try {
-      const p = JSON.parse(localStorage.getItem(KEY) || '');
-      if (p && Array.isArray(p.offsets)) return { offsets: p.offsets, hour12: !!p.hour12 };
-    } catch { /* ignore */ }
-    return { offsets: [0], hour12: false }; // default: UTC
+    // Prefer the current key; fall back to the legacy dotted v2 (same shape).
+    const s = readKey(KEY) || readKey('world-clock.v2') || { offsets: [0], hour12: false };
+    // One-time cleanup of legacy dotted keys.
+    for (const k of LEGACY_KEYS) { try { localStorage.removeItem(k); } catch { /* ignore */ } }
+    return s;
   }
   function save() {
     try { localStorage.setItem(KEY, JSON.stringify(state)); } catch { /* private mode */ }
@@ -152,6 +165,12 @@ const tool = TOOLS.find((t) => t.id === 'world-clock');
       const name = document.createElement('span');
       name.textContent = label(min);
       b.appendChild(name);
+      if (min === LOCAL) {
+        const ex = document.createElement('span');
+        ex.className = 'ex';
+        ex.textContent = 'Local';
+        b.appendChild(ex);
+      }
       b.addEventListener('mousedown', (e) => { e.preventDefault(); addOffset(min); });
       optionsEl.appendChild(b);
     });
