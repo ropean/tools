@@ -36,7 +36,10 @@ const switcherGroups = groupByCategory();
 
         <div class="switcher" data-switcher hidden style="position:absolute;right:0;top:calc(100% + 8px);width:320px;max-height:420px;overflow-y:auto;background:var(--bg);border:1px solid var(--border);border-radius:12px;box-shadow:rgba(0,0,0,0.1) 0 4px 12px;z-index:41;">
           <div style="padding:12px;border-bottom:1px solid var(--border);">
-            <input type="text" class="field" data-switcher-search placeholder="Search tools…" style="padding:8px 10px;font-size:14px;" autocomplete="off" />
+            <span class="input-clear" style="display:block;">
+              <input type="text" class="field" data-switcher-search placeholder="Search tools…" style="padding:8px 32px 8px 10px;font-size:14px;" autocomplete="off" />
+              <button type="button" class="clear-btn" aria-label="Clear">×</button>
+            </span>
           </div>
           {switcherGroups.map((group) => (
             <div data-switcher-group={group.key}>

@@ -7,8 +7,9 @@ const tool = TOOLS.find((t) => t.id === 'world-clock');
 <ToolLayout tool={tool}>
   <div class="wc">
     <div class="wc-bar">
-      <div class="wc-combo" id="wc-combo">
+      <div class="wc-combo input-clear" id="wc-combo">
         <input type="text" class="field" id="wc-input" role="combobox" aria-expanded="false" aria-autocomplete="list" placeholder="Add a clock — type an offset like +6 or -5" autocomplete="off" />
+        <button type="button" class="clear-btn" aria-label="Clear">×</button>
         <div class="wc-options" id="wc-options" role="listbox" hidden></div>
       </div>
       <label class="wc-toggle"><input type="checkbox" id="wc-hour12" /> 12-hour</label>

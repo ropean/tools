@@ -23,5 +23,24 @@ const { title, description = '', current } = Astro.props;
       </main>
       <Footer />
     </div>
+
+    <script>
+      // Wire every clearable search input: show the × only when it has a value,
+      // clear + refocus + re-fire 'input' (so the field's own listener re-runs).
+      for (const btn of document.querySelectorAll('.clear-btn')) {
+        const input = btn.parentElement?.querySelector('input');
+        if (!input) continue;
+        const sync = () => btn.classList.toggle('show', !!input.value);
+        input.addEventListener('input', sync);
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          input.value = '';
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+          input.focus();
+          sync();
+        });
+        sync();
+      }
+    </script>
   </body>
 </html>

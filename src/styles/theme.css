@@ -191,7 +191,23 @@ textarea.field { resize: vertical; }
   display: flex;
   gap: 8px;
   overflow-x: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
 }
+.chips::-webkit-scrollbar { display: none; } /* WebKit: keep swipe scroll, hide bar */
+
+/* Clearable search inputs: × button shown only when there is input */
+.input-clear { position: relative; }
+.input-clear input { padding-right: 32px; }
+.clear-btn {
+  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  width: 20px; height: 20px; padding: 0; border: none; cursor: pointer;
+  border-radius: 50%; background: var(--subtle); color: var(--muted);
+  display: none; align-items: center; justify-content: center;
+  font-size: 15px; line-height: 1;
+}
+.clear-btn.show { display: inline-flex; }
+.clear-btn:hover { color: var(--fg); background: var(--border); }
 .chip {
   display: inline-flex;
   align-items: center;
