@@ -8,11 +8,16 @@ import CategoryIcon from './CategoryIcon.astro';
 
 const { tool, size = 20 } = Astro.props;
 
+// Short aliases for common favicon hosts (used via tool.favicon: 'github').
+const FAVICON_ALIASES = {
+  github: 'https://github.githubassets.com/favicons/favicon.svg',
+};
+
 // Favicon candidates, tried in order; on the last failure we fall back to the
-// category icon. Use tool.favicon to override (e.g. GitHub's asset-host icon).
+// category icon. tool.favicon overrides the URL (a known alias or a full URL).
 let favicons = [];
 if (tool.favicon) {
-  favicons = [tool.favicon];
+  favicons = [FAVICON_ALIASES[tool.favicon] ?? tool.favicon];
 } else if (tool.external) {
   try {
     const origin = new URL(tool.external).origin;
