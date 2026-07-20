@@ -65,16 +65,17 @@ export const TOOLS = [
   { id: 'unit-converter', category: 'calc', name: 'Unit Converter', desc: 'Convert length, weight, temperature and more.', ready: false },
   { id: 'world-clock', category: 'daily', name: 'World Clock', desc: 'See the current time around the world; add your own clocks, saved locally.', ready: true },
 
-  // --- External tools (off-site, open in a new tab) ---
+  // --- External tools (off-site, open in a new tab). Titles/descriptions taken
+  //     from the live pages. ---
   { id: 'jwt-decoder', category: 'dev', name: 'JWT Decoder', desc: 'Decode and inspect JSON Web Tokens.', external: 'https://jwt.ropean.org/', ready: true },
-  { id: 'sqlite-playground', category: 'dev', name: 'SQLite Playground', desc: 'Run SQLite queries in the browser.', external: 'https://sqlite.ropean.org/', ready: true },
-  { id: 'seo-checker', category: 'dev', name: 'SEO Checker', desc: 'Check on-page SEO for a URL.', external: 'https://seo.ropean.org/', ready: true },
-  { id: 'api-tester', category: 'dev', name: 'API Tester', desc: 'Send HTTP requests and inspect responses.', external: 'https://api.ropean.org/', ready: true },
-  { id: 'cloudflare-tools', category: 'dev', name: 'Cloudflare Tools', desc: 'Cloudflare-related utilities.', external: 'https://cf.ropean.org/', ready: true },
-  { id: 'ats-checker', category: 'dev', name: 'ATS Checker', desc: 'Check a resume against applicant tracking systems.', external: 'https://ats.ropean.org/', ready: true },
-  { id: 'markdown-editor', category: 'text', name: 'Markdown Editor', desc: 'Write and preview Markdown online.', external: 'https://md.ropean.org/', ready: true },
-  { id: 'image-viewer', category: 'media', name: 'Image Viewer', desc: 'View and inspect images.', external: 'https://iv.ropean.org/', ready: true },
-  { id: 'logo-maker', category: 'media', name: 'Logo Maker', desc: 'Create simple logos.', external: 'https://logo.ropean.org/', ready: true },
+  { id: 'sqlite-browser', category: 'dev', name: 'SQLite Browser', desc: 'View, edit and query SQLite database files.', external: 'https://sqlite.ropean.org/', ready: true },
+  { id: 'access-to-sqlite', category: 'dev', name: 'Access to SQLite', desc: 'Convert Microsoft Access databases (.mdb/.accdb) to SQLite.', external: 'https://ats.ropean.org/', ready: true },
+  { id: 'seo-indexnow', category: 'dev', name: 'SEO IndexNow Submit', desc: 'Submit URLs to search engines (Bing, Yandex, Google, Baidu) via IndexNow.', external: 'https://seo.ropean.org/', ready: true },
+  { id: 'api-hub', category: 'dev', name: 'API Hub', desc: 'Browse and try the API (RapiDoc & Hoppscotch).', external: 'https://api.ropean.org/', ready: true },
+  { id: 'cf-contact-script', category: 'dev', name: 'CF Contact Script Generator', desc: 'Generate a Cloudflare console script to batch-update domain registrar contacts.', external: 'https://cf.ropean.org/', ready: true },
+  { id: 'markitdown', category: 'text', name: 'MarkItDown', desc: 'Convert any file or URL to clean Markdown.', external: 'https://md.ropean.org/', ready: true },
+  { id: 'chinese-id-toolkit', category: 'daily', name: 'Chinese ID Toolkit', desc: 'Validate, look up, generate and upgrade Chinese ID numbers.', external: 'https://iv.ropean.org/', ready: true },
+  { id: 'logo-designer', category: 'media', name: 'Logo Designer', desc: 'Design logos in the browser.', external: 'https://logo.ropean.org/', ready: true },
 ];
 
 // The link target for a tool card / switcher entry: the external URL for
