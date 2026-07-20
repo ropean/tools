@@ -2,7 +2,7 @@
 import Base from '../layouts/Base.astro';
 import CategoryIcon from '../components/CategoryIcon.astro';
 import ToolCard from '../components/ToolCard.astro';
-import { CATEGORIES, groupByCategory } from '../data/tools.js';
+import { groupByCategory } from '../data/tools.js';
 
 const groups = groupByCategory();
 const heart = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 20.5S3.5 15 3.5 8.9C3.5 6.1 5.7 4 8.4 4c1.7 0 3 .8 3.6 2c.6-1.2 1.9-2 3.6-2c2.7 0 4.9 2.1 4.9 4.9c0 6.1-8.5 11.6-8.5 11.6z"/></svg>';
@@ -23,7 +23,7 @@ const heart = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColo
     <button type="button" class="chip chip-fav" data-filter="favorites" id="fav-chip" aria-pressed="false" hidden>
       <span class="chip-heart" set:html={heart}></span>Favorites
     </button>
-    {CATEGORIES.map((cat) => (
+    {groups.map((cat) => (
       <button type="button" class="chip" data-filter={cat.key} aria-pressed="false">
         <CategoryIcon category={cat.key} />
         {cat.label}

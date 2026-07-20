@@ -18,6 +18,7 @@
 // Note: "Favorites" is not a category — it is a dynamic group the home page
 // builds client-side from the visitor's saved favorites (localStorage).
 export const CATEGORIES = [
+  { key: 'util', label: 'Utilities' },
   { key: 'text', label: 'Text & Data' },
   { key: 'dev', label: 'Developer' },
   { key: 'web', label: 'Web & Servers' },
@@ -27,9 +28,9 @@ export const CATEGORIES = [
 
 export const TOOLS = [
   // --- Live tools (native Astro pages under src/pages/) ---
-  { id: 'random-string-generator', category: 'text', name: 'Random String Generator', desc: 'Generate random strings, tokens and passwords.', icon: 'shuffle', ready: true },
-  { id: 'qr-generator', category: 'media', name: 'QR Code Generator', desc: 'Generate a QR code from text or a link.', icon: 'qr', ready: true },
-  { id: 'world-clock', category: 'dev', name: 'World Clock', desc: 'Track current times worldwide with your own saved clocks.', icon: 'clock', ready: true },
+  { id: 'random-string-generator', category: 'util', name: 'Random String Generator', desc: 'Generate random strings, tokens and passwords.', icon: 'shuffle', ready: true },
+  { id: 'qr-generator', category: 'util', name: 'QR Code Generator', desc: 'Generate a QR code from text or a link.', icon: 'qr', ready: true },
+  { id: 'world-clock', category: 'util', name: 'World Clock', desc: 'Track current times worldwide with your own saved clocks.', icon: 'clock', ready: true },
   { id: 'json-tree-viewer', category: 'text', name: 'JSON Tree Viewer', desc: 'Explore JSON as a tree and filter nodes by keyword.', icon: 'braces', ready: true },
   { id: 'markdown-to-html', category: 'text', name: 'Markdown to HTML', desc: 'Convert Markdown to HTML with a live preview.', icon: 'code', ready: true },
   { id: 'dns-checker', category: 'web', name: 'DNS Checker', desc: 'Query and inspect DNS records for any domain.', icon: 'globe', ready: true },
@@ -70,9 +71,12 @@ export function categoryLabel(key) {
   return CATEGORIES.find((c) => c.key === key)?.label ?? key;
 }
 
-// Tools grouped by category, in CATEGORIES order, skipping empty groups.
+// Tools grouped by category, skipping empty groups. Categories are sorted
+// alphabetically by label, and tools within each group alphabetically by name.
+const byName = (a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
 export function groupByCategory(tools = TOOLS) {
   return CATEGORIES
-    .map((cat) => ({ ...cat, tools: tools.filter((t) => t.category === cat.key) }))
-    .filter((g) => g.tools.length > 0);
+    .map((cat) => ({ ...cat, tools: tools.filter((t) => t.category === cat.key).sort(byName) }))
+    .filter((g) => g.tools.length > 0)
+    .sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: 'base' }));
 }

@@ -69,7 +69,7 @@ const switcherGroups = groupByCategory();
       <div class="tool-side">
         <slot name="sidebar">
           <div class="panel">
-            <h3>About this tool</h3>
+            <h3>{tool.name}</h3>
             <p>{tool.desc}</p>
           </div>
           {related.length > 0 && (
