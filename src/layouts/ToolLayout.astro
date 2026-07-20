@@ -49,10 +49,13 @@ const switcherGroups = groupByCategory();
                   data-search={`${t.name} ${t.desc}`.toLowerCase()}
                   style="padding:9px 12px;"
                   aria-current={t.id === tool.id ? 'page' : undefined}
+                  target={t.external ? '_blank' : undefined}
+                  rel={t.external ? 'noopener' : undefined}
                 >
                   <span class="mini-icon"><CategoryIcon category={t.category} /></span>
                   {t.name}
-                  {!t.ready && <span style="margin-left:auto;font-size:10px;color:var(--muted);">Coming soon</span>}
+                  {t.external && <span style="margin-left:auto;font-size:10px;color:var(--muted);">External ↗</span>}
+                  {!t.external && !t.ready && <span style="margin-left:auto;font-size:10px;color:var(--muted);">Coming soon</span>}
                 </a>
               ))}
             </div>
@@ -74,9 +77,15 @@ const switcherGroups = groupByCategory();
               <h3 style="margin-bottom:12px;">Related tools</h3>
               <div class="related-list">
                 {related.map((rt) => (
-                  <a class="related-item" href={toolHref(rt)}>
+                  <a
+                    class="related-item"
+                    href={toolHref(rt)}
+                    target={rt.external ? '_blank' : undefined}
+                    rel={rt.external ? 'noopener' : undefined}
+                  >
                     <span class="mini-icon"><CategoryIcon category={rt.category} /></span>
                     {rt.name}
+                    {rt.external && <span style="margin-left:auto;font-size:10px;color:var(--muted);">External ↗</span>}
                   </a>
                 ))}
               </div>

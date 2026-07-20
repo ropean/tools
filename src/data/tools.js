@@ -1,9 +1,11 @@
 // Tool catalog and categories.
-// Each tool: { id, category, name, desc, ready }
-//  - ready:true   → has a native Astro page at src/pages/<id>.astro.
-//  - ready:false  → shows a "Coming soon" badge; a placeholder page is generated
-//                   at /<id>.html by src/pages/[id].astro.
-// Every card / switcher entry links to /<id>.html at the site root (see toolHref).
+// Each tool: { id, category, name, desc, ready, external? }
+//  - ready:true          → has a native Astro page at src/pages/<id>.astro.
+//  - ready:false         → shows a "Coming soon" badge; a placeholder page is
+//                          generated at /<id>.html by src/pages/[id].astro.
+//  - external:'https://…' → an off-site tool: links straight to that URL in a new
+//                          tab, marked "External ↗"; no in-site page is generated.
+// Non-external entries link to /<id>.html at the site root (see toolHref).
 
 export const CATEGORIES = [
   { key: 'text', label: 'Text' },
@@ -57,15 +59,16 @@ export const TOOLS = [
   { id: 'text-diff', category: 'text', name: 'Text Diff', desc: 'Highlight the differences between two texts.', ready: false },
   { id: 'regex-tester', category: 'dev', name: 'Regex Tester', desc: 'Test regular expressions against text in real time.', ready: false },
   { id: 'cron-builder', category: 'dev', name: 'Cron Builder', desc: 'Build cron schedule expressions visually.', ready: false },
-  { id: 'image-compressor', category: 'media', name: 'Image Compressor', desc: 'Compress images right in the browser.', ready: false },
+  { id: 'image-converter', category: 'media', name: 'Image Converter', desc: 'Convert images between formats. Opens ic.ropean.org.', external: 'https://ic.ropean.org/', ready: true },
   { id: 'qr-generator', category: 'media', name: 'QR Code Generator', desc: 'Turn text or links into QR codes.', ready: false },
   { id: 'unit-converter', category: 'calc', name: 'Unit Converter', desc: 'Convert length, weight, temperature and more.', ready: false },
   { id: 'timestamp-converter', category: 'calc', name: 'Timestamp Converter', desc: 'Convert between Unix timestamps and dates.', ready: false },
 ];
 
-// The link target for a tool card / switcher entry: a root-level page per tool.
+// The link target for a tool card / switcher entry: the external URL for
+// off-site tools, otherwise a root-level page per tool.
 export function toolHref(tool) {
-  return `/${tool.id}.html`;
+  return tool.external ?? `/${tool.id}.html`;
 }
 
 export function categoryLabel(key) {

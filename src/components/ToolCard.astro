@@ -6,6 +6,7 @@ import { toolHref } from '../data/tools.js';
 const { tool } = Astro.props;
 // Lowercased haystack used by the client-side search filter.
 const search = `${tool.name} ${tool.desc}`.toLowerCase();
+const external = !!tool.external;
 ---
 <a
   class="card"
@@ -13,11 +14,14 @@ const search = `${tool.name} ${tool.desc}`.toLowerCase();
   data-tool
   data-category={tool.category}
   data-search={search}
+  target={external ? '_blank' : undefined}
+  rel={external ? 'noopener' : undefined}
 >
   <span class="card-icon"><CategoryIcon category={tool.category} /></span>
   <span class="card-title">
     <span class="name">{tool.name}</span>
-    {!tool.ready && <span class="badge">Coming soon</span>}
+    {external && <span class="badge badge-ext">External ↗</span>}
+    {!external && !tool.ready && <span class="badge">Coming soon</span>}
   </span>
   <span class="card-desc">{tool.desc}</span>
 </a>

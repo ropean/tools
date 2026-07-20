@@ -252,6 +252,7 @@ textarea.field { resize: vertical; }
   border-radius: 9999px;
   padding: 2px 8px;
 }
+.badge-ext { color: var(--fg); border-color: var(--border-strong); background: transparent; }
 .empty { text-align: center; padding: 64px 24px; color: var(--muted); }
 
 /* --- Tool page --- */
