@@ -21,6 +21,12 @@ const common = {
 {category === 'calc' && (
   <svg {...common}><path d="M7 8h11l-3.5-3.5"/><path d="M17 16H6l3.5 3.5"/></svg>
 )}
+{category === 'web' && (
+  <svg {...common}><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18"/></svg>
+)}
+{category === 'db' && (
+  <svg {...common}><ellipse cx="12" cy="5.5" rx="7" ry="2.5"/><path d="M5 5.5v13c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5v-13"/><path d="M5 12c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5"/></svg>
+)}
 {category === 'dev' && (
   <svg {...common}><path d="M9 6l-5 6 5 6"/><path d="M15 6l5 6-5 6"/></svg>
 )}
