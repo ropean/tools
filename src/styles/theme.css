@@ -19,6 +19,23 @@
   --mono: 'SF Mono', Menlo, Consolas, monospace;
 }
 
+/* Warm dark theme: same hue family, inverted lightness. Primary/pressed
+   surfaces (--dark/--on-dark) flip so dark buttons become light on a dark bg. */
+[data-theme='dark'] {
+  --bg: #1a1813;
+  --fg: #f2efe6;
+  --muted: #a5a096;
+  --border: #332f28;
+  --border-strong: rgba(242, 239, 230, 0.45);
+  --dark: #f2efe6;
+  --on-dark: #1a1813;
+  --subtle: rgba(242, 239, 230, 0.06);
+  --subtle-2: rgba(242, 239, 230, 0.03);
+  --error: #e0745e;
+}
+:root { color-scheme: light; }
+[data-theme='dark'] { color-scheme: dark; }
+
 * { box-sizing: border-box; }
 
 /* Always reserve the scrollbar gutter so page width doesn't shift when content
@@ -114,6 +131,19 @@ a { color: inherit; }
   flex: 0 0 auto;
 }
 .brand-name { font-size: 18px; font-weight: 600; letter-spacing: -0.02em; }
+
+.header-right { display: flex; align-items: center; gap: 16px; }
+.theme-toggle {
+  width: 36px; height: 36px; border-radius: var(--radius);
+  border: none; background: transparent;
+  color: var(--fg); cursor: pointer; flex: 0 0 auto;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: background 0.15s ease;
+}
+.theme-toggle:hover { background: var(--subtle); }
+.theme-toggle .icon-sun { display: none; }
+[data-theme='dark'] .theme-toggle .icon-sun { display: inline-flex; }
+[data-theme='dark'] .theme-toggle .icon-moon { display: none; }
 
 .nav-desktop { display: flex; align-items: center; gap: 28px; }
 .nav-link {
@@ -289,6 +319,8 @@ textarea.field { resize: vertical; }
 .ti-fav .ti-fallback { display: none; }
 .ti-fav.failed img { display: none; }
 .ti-fav.failed .ti-fallback { display: inline-flex; }
+/* Monochrome dark marks (e.g. GitHub) invert so they stay visible in dark mode */
+[data-theme='dark'] .ti-invert-dark img { filter: invert(1); }
 .card-title { display: flex; align-items: center; gap: 8px; }
 .card-title .name { font-size: 18px; font-weight: 400; }
 .card-desc { font-size: 14px; color: var(--muted); line-height: 1.5; }

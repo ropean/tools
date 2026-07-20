@@ -43,7 +43,7 @@ const svg = {
 const name = tool.icon;
 ---
 {faviconUrl ? (
-  <span class="ti-fav">
+  <span class:list={['ti-fav', tool.favicon === 'github' && 'ti-invert-dark']}>
     <img src={faviconUrl} alt="" width={size + 2} height={size + 2} loading="lazy"
          onerror="this.closest('.ti-fav').classList.add('failed')" />
     <span class="ti-fallback"><CategoryIcon category={tool.category} size={size} /></span>
