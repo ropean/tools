@@ -1,0 +1,163 @@
+---
+import ToolLayout from '../../layouts/ToolLayout.astro';
+import { TOOLS } from '../../data/tools.js';
+
+const tool = TOOLS.find((t) => t.id === 'htaccess-rewrite');
+---
+<ToolLayout tool={tool}>
+  <div class="hrr">
+    <div class="hrr-field">
+      <label class="hrr-label" for="hrr-domain">Domain</label>
+      <input class="field" type="text" id="hrr-domain" placeholder="tobemvp.com" value="tobemvp.com" />
+    </div>
+
+    <div class="hrr-field">
+      <span class="hrr-label">www handling</span>
+      <div class="hrr-radios">
+        <label><input type="radio" name="hrr-redirect" id="hrr-wwwToNon" checked /> Redirect www to non-www</label>
+        <label><input type="radio" name="hrr-redirect" id="hrr-nonToWww" /> Redirect non-www to www</label>
+      </div>
+    </div>
+
+    <div class="hrr-field">
+      <div class="hrr-checks">
+        <label><input type="checkbox" id="hrr-https" checked /> Redirect http to https</label>
+        <label><input type="checkbox" id="hrr-removePort" checked /> Strip port number from the URL</label>
+      </div>
+    </div>
+
+    <div class="hrr-actions">
+      <button type="button" class="btn btn-primary" id="hrr-apache">Generate Apache rules</button>
+      <button type="button" class="btn" id="hrr-nginx">Generate Nginx rules</button>
+      <button type="button" class="btn btn-ghost" id="hrr-copy">Copy</button>
+    </div>
+
+    <div class="hrr-field">
+      <label class="hrr-label" for="hrr-output">Generated rules</label>
+      <textarea class="field mono" id="hrr-output" rows="12" readonly spellcheck="false"></textarea>
+    </div>
+  </div>
+</ToolLayout>
+
+<style>
+  .hrr { display: flex; flex-direction: column; gap: 20px; max-width: 720px; }
+  .hrr-field { display: flex; flex-direction: column; gap: 6px; }
+  .hrr-label { font-size: 12px; color: var(--muted); }
+  .hrr-radios, .hrr-checks { display: flex; flex-wrap: wrap; gap: 12px 20px; }
+  .hrr-radios label, .hrr-checks label { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; }
+  .hrr-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+</style>
+
+<script>
+  // .htaccess / Nginx rewrite rule generator — fully client-side, no network calls.
+  const $ = (id) => document.getElementById(id);
+  const outputEl = $('hrr-output');
+
+  function extractDomainFromURL(url) {
+    const regex = /^(?:https?:\/\/)?(?:www\.)?([^/]+)/i;
+    const matches = url.match(regex);
+    if (matches && matches.length >= 2) {
+      return matches[1];
+    }
+    return null;
+  }
+
+  function removePortFromURL(url) {
+    const regex = /:\d+/;
+    return url.replace(regex, '');
+  }
+
+  function generateRules(server) {
+    const domainInput = $('hrr-domain').value;
+    const wwwToNonWWW = $('hrr-wwwToNon').checked;
+    const nonWWWToWWW = $('hrr-nonToWww').checked;
+    const removePort = $('hrr-removePort').checked;
+    const httpToHttps = $('hrr-https').checked;
+
+    let domainWithoutWWW = extractDomainFromURL(domainInput);
+
+    if (removePort && domainWithoutWWW) {
+      domainWithoutWWW = removePortFromURL(domainWithoutWWW);
+    }
+
+    const domainWithWWW = `www.${domainWithoutWWW}`;
+    let targetWWW = wwwToNonWWW ? domainWithoutWWW : domainWithWWW;
+
+    switch (server) {
+      case 'Apache':
+        targetWWW += '/';
+        break;
+      case 'Nginx':
+        break;
+    }
+
+    const rules = [];
+
+    if (httpToHttps) {
+      switch (server) {
+        case 'Apache':
+          rules.push('RewriteEngine On');
+          rules.push('RewriteCond %{HTTPS} off');
+          rules.push(`RewriteRule ^(.*)$ https://${targetWWW}%{REQUEST_URI} [L,R=301]`);
+          break;
+        case 'Nginx':
+          rules.push('if ($server_port = 80) {');
+          rules.push(`  rewrite ^(.*)$ https://${targetWWW}$uri permanent;`);
+          rules.push('}');
+          break;
+      }
+      rules.push('');
+    }
+
+    if (wwwToNonWWW) {
+      switch (server) {
+        case 'Apache':
+          rules.push('RewriteEngine On');
+          rules.push(`RewriteCond %{HTTP_HOST} ^${domainWithWWW.replace(/\./g, '\\.')}$ [NC]`);
+          rules.push(`RewriteRule ^(.*)$ https://${targetWWW}$1 [R=301,L]`);
+          break;
+        case 'Nginx':
+          rules.push(`if ($host ~* ^${domainWithWWW.replace(/\./g, '\\.')}$){`);
+          rules.push(`  rewrite ^(.*)$ https://${targetWWW}$uri permanent;`);
+          rules.push('}');
+          break;
+      }
+      rules.push('');
+    }
+
+    if (nonWWWToWWW) {
+      switch (server) {
+        case 'Apache':
+          rules.push('RewriteEngine On');
+          rules.push(`RewriteCond %{HTTP_HOST} ^${domainWithoutWWW.replace(/\./g, '\\.')}$ [NC]`);
+          rules.push(`RewriteRule ^(.*)$ https://${targetWWW}$1 [R=301,L]`);
+          break;
+        case 'Nginx':
+          rules.push(`if ($host ~* ^${domainWithoutWWW.replace(/\./g, '\\.')}$){`);
+          rules.push(`  rewrite ^(.*)$ https://${targetWWW}$uri permanent;`);
+          rules.push('}');
+          break;
+      }
+      rules.push('');
+    }
+
+    rules.push('# Other rules');
+    rules.push('');
+
+    outputEl.value = rules.join('\n');
+  }
+
+  $('hrr-apache').addEventListener('click', () => generateRules('Apache'));
+  $('hrr-nginx').addEventListener('click', () => generateRules('Nginx'));
+  $('hrr-copy').addEventListener('click', async () => {
+    if (!outputEl.value) return;
+    await navigator.clipboard.writeText(outputEl.value);
+    const btn = $('hrr-copy');
+    const prev = btn.textContent;
+    btn.textContent = 'Copied';
+    setTimeout(() => { btn.textContent = prev; }, 1200);
+  });
+
+  // Generate Apache rules on load, matching the original behaviour.
+  generateRules('Apache');
+</script>

@@ -1,0 +1,508 @@
+---
+import ToolLayout from '../../layouts/ToolLayout.astro';
+import { TOOLS } from '../../data/tools.js';
+
+const tool = TOOLS.find((t) => t.id === 'openresty-cors-generator');
+---
+<ToolLayout tool={tool}>
+  <div class="cors">
+    <div class="cors-links">
+      <a class="btn btn-ghost" href="https://api.ropean.org/#get-/cors" target="_blank" rel="noopener">Check CORS</a>
+      <a class="btn btn-ghost" href="https://ropean.org/post/openresty-cors-lua" target="_blank" rel="noopener">How it works</a>
+    </div>
+
+    <!-- Config -->
+    <div class="cors-config">
+      <!-- Origins -->
+      <div class="cors-group">
+        <span class="cors-label">Allowed origins</span>
+        <p class="cors-hint">
+          Type a domain and press Enter to add it.<br />
+          A top-level domain (e.g. <code>ropean.org</code>) automatically matches that domain and all its subdomains;
+          a subdomain (e.g. <code>mis.ropean.org</code>) matches exactly.
+        </p>
+        <div class="origin-wrapper" id="originWrapper">
+          <div class="origin-tags" id="originTags"></div>
+          <input
+            type="text"
+            id="originInput"
+            class="origin-input"
+            placeholder="Enter a domain, press Enter to add…"
+            autocomplete="off"
+            spellcheck="false"
+          />
+        </div>
+        <div class="origin-legend">
+          <div class="legend-item"><span class="legend-dot toplevel"></span>Top-level domain (includes all subdomains)</div>
+          <div class="legend-item"><span class="legend-dot subdomain"></span>Subdomain (exact match only)</div>
+        </div>
+      </div>
+
+      <div class="cors-divider"></div>
+
+      <!-- Methods -->
+      <div class="cors-group">
+        <span class="cors-label">Allowed HTTP methods <em>all selected by default</em></span>
+        <div class="cb-grid" id="methodsGrid">
+          <label class="cb-item"><input type="checkbox" class="method" value="GET" checked /><span>GET</span></label>
+          <label class="cb-item"><input type="checkbox" class="method" value="POST" checked /><span>POST</span></label>
+          <label class="cb-item"><input type="checkbox" class="method" value="PUT" checked /><span>PUT</span></label>
+          <label class="cb-item"><input type="checkbox" class="method" value="PATCH" checked /><span>PATCH</span></label>
+          <label class="cb-item"><input type="checkbox" class="method" value="DELETE" checked /><span>DELETE</span></label>
+          <label class="cb-item"><input type="checkbox" class="method" value="OPTIONS" checked /><span>OPTIONS</span></label>
+        </div>
+      </div>
+
+      <div class="cors-divider"></div>
+
+      <!-- Headers -->
+      <div class="cors-group">
+        <span class="cors-label">Allowed request headers <em>all selected by default</em></span>
+        <div class="cb-grid" id="headersGrid">
+          <label class="cb-item"><input type="checkbox" class="hdr" value="Content-Type" checked /><span>Content-Type</span></label>
+          <label class="cb-item"><input type="checkbox" class="hdr" value="Authorization" checked /><span>Authorization</span></label>
+          <label class="cb-item"><input type="checkbox" class="hdr" value="X-Requested-With" checked /><span>X-Requested-With</span></label>
+        </div>
+      </div>
+
+      <div class="cors-divider"></div>
+
+      <!-- Credentials -->
+      <div class="toggle-row">
+        <div class="toggle-info">
+          <div class="toggle-title">Allow-Credentials</div>
+          <div class="toggle-desc">Allow cross-origin requests to carry Cookie / Authorization</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="allowCredentials" checked />
+          <span class="switch-slider"></span>
+        </label>
+      </div>
+
+      <!-- Max Age -->
+      <div class="cors-group">
+        <span class="cors-label">Preflight cache duration</span>
+        <div class="number-row">
+          <div class="number-group">
+            <input type="number" id="maxAgeHours" value="24" min="0" max="720" />
+            <span class="number-unit">hours</span>
+          </div>
+          <span class="number-calc" id="maxAgeCalc">= 86,400 seconds</span>
+        </div>
+        <p class="cors-hint">How long the browser caches the OPTIONS preflight result, reducing repeated requests. Set to 0 to disable caching.</p>
+      </div>
+
+      <div class="cors-divider"></div>
+
+      <!-- Comments -->
+      <div class="toggle-row">
+        <div class="toggle-info">
+          <div class="toggle-title">Generate comments</div>
+          <div class="toggle-desc">Add explanatory comments to the generated config</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="generateComments" checked />
+          <span class="switch-slider"></span>
+        </label>
+      </div>
+
+      <button type="button" class="btn btn-primary cors-gen" id="genBtn">Generate config</button>
+    </div>
+
+    <!-- Output -->
+    <div class="cors-output">
+      <div class="cors-banner">
+        <strong>Prerequisite:</strong> the config below requires <strong>OpenResty</strong> (with built-in LuaJIT).
+        Standard Nginx does not support the <code>header_filter_by_lua_block</code> and <code>rewrite_by_lua_block</code>
+        directives. Paste the two generated blocks inside your <code>{'server { }'}</code> block.
+      </div>
+
+      <div class="code-card">
+        <div class="code-header">
+          <span class="code-title">Generated Lua config blocks</span>
+          <button type="button" class="btn code-copy" id="copyBtn">Copy</button>
+        </div>
+        <div class="code-body">
+          <div class="code-placeholder" id="codePlaceholder">Configure options, then click Generate config</div>
+          <pre class="code-pre" id="codeOutput"></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</ToolLayout>
+
+<style>
+  .cors { display: flex; flex-direction: column; gap: 20px; }
+  .cors-links { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  .cors-config { display: flex; flex-direction: column; gap: 18px; }
+  .cors-group { display: flex; flex-direction: column; gap: 8px; }
+  .cors-label { font-size: 13px; font-weight: 600; color: var(--fg); }
+  .cors-label em { font-style: normal; font-weight: 400; font-size: 11px; color: var(--muted); margin-left: 4px; }
+  .cors-hint { font-size: 12px; color: var(--muted); line-height: 1.5; margin: 0; }
+  .cors-hint code {
+    font-family: var(--mono); font-size: 11px; background: var(--subtle);
+    padding: 1px 5px; border-radius: 4px;
+  }
+  .cors-divider { height: 1px; background: var(--border); }
+
+  /* Origins tag input */
+  .origin-wrapper {
+    border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 8px 10px; min-height: 72px; cursor: text; background: var(--bg);
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .origin-wrapper:focus-within { border-color: var(--ring-border); box-shadow: 0 0 0 3px var(--ring); }
+  .origin-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .origin-tags:not(:empty) { margin-bottom: 6px; }
+  .origin-tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 3px 6px 3px 10px; border-radius: 20px;
+    font-size: 12px; font-weight: 500; font-family: var(--mono);
+  }
+  .origin-tag.toplevel { background: rgba(59, 130, 246, 0.12); color: #1e40af; }
+  .origin-tag.subdomain { background: rgba(154, 59, 46, 0.1); color: var(--error); }
+  .tag-badge { font-size: 10px; font-weight: 400; opacity: 0.7; font-family: var(--font); }
+  .tag-remove {
+    width: 16px; height: 16px; border-radius: 50%; border: none;
+    background: rgba(28, 28, 28, 0.12); color: inherit; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; line-height: 1; padding: 0; transition: background 0.15s;
+  }
+  .tag-remove:hover { background: rgba(28, 28, 28, 0.28); }
+  .origin-input { border: none; outline: none; font-size: 13px; color: var(--fg); background: transparent; width: 100%; }
+  .origin-input::placeholder { color: var(--muted); }
+
+  .origin-legend { display: flex; gap: 14px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .legend-dot.toplevel { background: #3b82f6; }
+  .legend-dot.subdomain { background: var(--error); }
+
+  /* Checkbox grid */
+  .cb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 7px; }
+  .cb-item {
+    display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+    border: 1px solid var(--border); border-radius: var(--radius);
+    cursor: pointer; user-select: none; transition: border-color 0.15s, background 0.15s;
+  }
+  .cb-item:hover { border-color: var(--border-strong); }
+  .cb-item.is-checked { border-color: var(--border-strong); background: var(--subtle); }
+  .cb-item input[type='checkbox'] { width: 14px; height: 14px; accent-color: var(--dark); cursor: pointer; flex: 0 0 auto; }
+  .cb-item span { font-size: 13px; font-family: var(--mono); color: var(--fg); }
+  .cb-item.is-checked span { font-weight: 600; }
+
+  /* Toggle rows */
+  .toggle-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--subtle-2);
+  }
+  .toggle-info { display: flex; flex-direction: column; gap: 2px; }
+  .toggle-title { font-size: 13px; font-weight: 600; color: var(--fg); }
+  .toggle-desc { font-size: 12px; color: var(--muted); }
+  .switch { position: relative; width: 44px; height: 24px; flex: 0 0 auto; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .switch-slider {
+    position: absolute; inset: 0; background: var(--border-strong); border-radius: 24px;
+    cursor: pointer; transition: background 0.2s;
+  }
+  .switch-slider::before {
+    content: ''; position: absolute; width: 18px; height: 18px; left: 3px; bottom: 3px;
+    background: #fff; border-radius: 50%; transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+  .switch input:checked + .switch-slider { background: var(--dark); }
+  .switch input:checked + .switch-slider::before { transform: translateX(20px); }
+
+  /* Number input */
+  .number-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .number-group {
+    display: flex; border: 1px solid var(--border); border-radius: var(--radius);
+    overflow: hidden; transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .number-group:focus-within { border-color: var(--ring-border); box-shadow: 0 0 0 3px var(--ring); }
+  .number-group input {
+    border: none; outline: none; padding: 8px 12px; font-size: 15px; font-weight: 600;
+    color: var(--fg); width: 72px; text-align: center; background: var(--bg);
+  }
+  .number-unit {
+    padding: 8px 12px; background: var(--subtle); border-left: 1px solid var(--border);
+    font-size: 13px; color: var(--muted); display: flex; align-items: center;
+  }
+  .number-calc { font-size: 12px; color: var(--muted); }
+
+  .cors-gen { justify-content: center; padding: 12px 20px; font-weight: 600; }
+
+  /* Output */
+  .cors-output { display: flex; flex-direction: column; gap: 16px; }
+  .cors-banner {
+    padding: 14px 16px; border-radius: var(--radius-lg); font-size: 13px; line-height: 1.6;
+    background: var(--subtle); border: 1px solid var(--border); color: var(--fg);
+  }
+  .cors-banner code {
+    font-family: var(--mono); font-size: 11px; background: var(--bg);
+    border: 1px solid var(--border); padding: 1px 5px; border-radius: 4px;
+  }
+
+  .code-card { border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+  .code-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 14px; background: var(--subtle); border-bottom: 1px solid var(--border);
+  }
+  .code-title { font-size: 13px; font-weight: 600; color: var(--fg); }
+  .code-copy { padding: 5px 12px; font-size: 12px; }
+  .code-copy.copied { color: var(--on-dark); background: var(--dark); border-color: var(--dark); }
+  .code-body { background: var(--dark); overflow-x: auto; min-height: 360px; display: flex; flex-direction: column; }
+  .code-placeholder {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    min-height: 360px; color: rgba(252, 251, 248, 0.4); font-size: 14px; text-align: center; padding: 24px;
+  }
+  .code-pre {
+    display: none; padding: 20px 24px; margin: 0; white-space: pre;
+    font-family: var(--mono); font-size: 12.5px; line-height: 1.75; color: var(--on-dark);
+  }
+</style>
+
+<script>
+  // OpenResty CORS config generator — fully client-side, no network calls.
+  const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'];
+  const HEADERS = ['Content-Type', 'Authorization', 'X-Requested-With'];
+
+  const $ = (id) => document.getElementById(id);
+
+  // ── State ──────────────────────────────────────────────────────────────────
+  const origins = [];
+
+  // ── Checkbox styling sync ───────────────────────────────────────────────────
+  function initCheckboxes() {
+    document.querySelectorAll('.cb-item input[type="checkbox"]').forEach((cb) => {
+      const label = cb.closest('.cb-item');
+      const sync = () => label.classList.toggle('is-checked', cb.checked);
+      sync();
+      cb.addEventListener('change', sync);
+    });
+  }
+
+  function getChecked(selector) {
+    return Array.from(document.querySelectorAll(selector))
+      .filter((cb) => cb.checked)
+      .map((cb) => cb.value);
+  }
+
+  // ── Origins ─────────────────────────────────────────────────────────────────
+  function isTopLevel(domain) {
+    return (domain.match(/\./g) || []).length === 1;
+  }
+
+  function addOrigin(raw) {
+    const domain = raw.trim().toLowerCase()
+      .replace(/^https?:\/\//, '')
+      .replace(/\/$/, '');
+    if (!domain) return;
+    if (!/^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}$/.test(domain)) {
+      alert(`"${domain}" is not a valid domain`);
+      return;
+    }
+    if (origins.includes(domain)) return;
+    origins.push(domain);
+    renderTags();
+  }
+
+  function removeOrigin(domain) {
+    const i = origins.indexOf(domain);
+    if (i > -1) origins.splice(i, 1);
+    renderTags();
+  }
+
+  function renderTags() {
+    const container = $('originTags');
+    container.innerHTML = '';
+    origins.forEach((d) => {
+      const top = isTopLevel(d);
+      const tag = document.createElement('span');
+      tag.className = `origin-tag ${top ? 'toplevel' : 'subdomain'}`;
+
+      const name = document.createTextNode(d + ' ');
+      const badge = document.createElement('span');
+      badge.className = 'tag-badge';
+      badge.textContent = top ? 'subdomains' : 'exact';
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'tag-remove';
+      btn.title = 'Remove';
+      btn.textContent = '×';
+      btn.addEventListener('click', (e) => { e.stopPropagation(); removeOrigin(d); });
+
+      tag.append(name, badge, btn);
+      container.appendChild(tag);
+    });
+  }
+
+  $('originWrapper').addEventListener('click', () => $('originInput').focus());
+
+  $('originInput').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      if (this.value.trim()) { addOrigin(this.value); this.value = ''; }
+    }
+  });
+
+  $('originInput').addEventListener('blur', function () {
+    if (this.value.trim()) { addOrigin(this.value); this.value = ''; }
+  });
+
+  // ── Max Age ─────────────────────────────────────────────────────────────────
+  $('maxAgeHours').addEventListener('input', function () {
+    const h = Math.max(0, parseInt(this.value) || 0);
+    $('maxAgeCalc').textContent = `= ${(h * 3600).toLocaleString()} seconds`;
+  });
+
+  // ── Lua pattern builder ──────────────────────────────────────────────────────
+  // Escape dots for a Lua pattern: "ropean.org" -> "ropean%.org"
+  function luaEscape(domain) {
+    return domain.replace(/\./g, '%.');
+  }
+
+  // Build the if/or chain for origin matching. `indent` is the leading whitespace.
+  function buildOriginIf(list, indent) {
+    const lines = [];
+    list.forEach((domain, i) => {
+      const esc = luaEscape(domain);
+      const kw = i === 0 ? 'if ' : 'or ';
+      if (isTopLevel(domain)) {
+        lines.push(`${indent}${kw}origin:match("^https?://(${esc})$")`);
+        lines.push(`${indent}or origin:match("^https?://[a-z0-9%-]+%.${esc}$")`);
+      } else {
+        lines.push(`${indent}${kw}origin:match("^https?://(${esc})$")`);
+      }
+    });
+    lines.push(`${indent}then`);
+    return lines;
+  }
+
+  // ── Code generation ──────────────────────────────────────────────────────────
+  function generate() {
+    if (origins.length === 0) { alert('Please add at least one allowed origin'); return; }
+
+    const methods = getChecked('.method');
+    const headers = getChecked('.hdr');
+    if (methods.length === 0) { alert('Please select at least one HTTP method'); return; }
+
+    const withComments = $('generateComments').checked;
+    const creds = $('allowCredentials').checked;
+    const maxAgeH = Math.max(0, parseInt($('maxAgeHours').value) || 0);
+    const maxAgeS = maxAgeH * 3600;
+    const methodsStr = methods.join(', ');
+    const headersStr = headers.join(', ');
+    const currentUrl = window.location.href;
+
+    const L1 = '    '; // 4sp — inside server{}
+    const L2 = '        '; // 8sp — inside lua block
+    const L3 = '            '; // 12sp — inside outer if (rewrite block)
+    const L4 = '                '; // 16sp — inside inner if (rewrite block)
+
+    const out = [];
+
+    // ── header_filter_by_lua_block ──────────────────────────────
+    if (withComments) {
+      out.push(`${L1}# CORS: inject headers during the response filter phase, covering all response types (including static files)`);
+      out.push(`${L1}# Use header_filter_by_lua_block instead of add_header to avoid header-override issues with Nginx if blocks`);
+      out.push(`${L1}# Generated by: ${currentUrl}`);
+    }
+    out.push(`${L1}header_filter_by_lua_block {`);
+    out.push(`${L2}local origin = ngx.req.get_headers()["Origin"] or ""`);
+    out.push('');
+
+    if (withComments) {
+      const hasTop = origins.some(isTopLevel);
+      out.push(`${L2}-- Whitelist: ${hasTop ? 'allow the specified domains and all their subdomains' : 'allow the specified domains (exact match)'}`);
+    }
+    buildOriginIf(origins, L2).forEach((l) => out.push(l));
+
+    if (withComments) {
+      out.push(`${L2}    -- Return the caller's exact origin (a wildcard cannot be used together with credentials)`);
+    }
+    out.push(`${L2}    ngx.header["Access-Control-Allow-Origin"]      = origin`);
+    out.push(`${L2}    ngx.header["Access-Control-Allow-Methods"]     = "${methodsStr}"`);
+    out.push(`${L2}    ngx.header["Access-Control-Allow-Headers"]     = "${headersStr}"`);
+    if (creds) {
+      if (withComments) {
+        out.push(`${L2}    -- Allow cross-origin requests to carry Cookie / Authorization (frontend fetch must set credentials: 'include')`);
+      }
+      out.push(`${L2}    ngx.header["Access-Control-Allow-Credentials"] = "true"`);
+    }
+    if (withComments) {
+      out.push(`${L2}    -- Tell the CDN to cache separately per Origin value, preventing a cached version without CORS headers from being reused`);
+    }
+    out.push(`${L2}    ngx.header["Vary"]                             = "Origin"`);
+    out.push(`${L2}end`);
+    out.push(`${L1}}`);
+
+    // ── rewrite_by_lua_block ────────────────────────────────────
+    out.push('');
+    if (withComments) {
+      out.push(`${L1}# CORS: intercept OPTIONS preflight requests during the rewrite phase, returning 204 early before reaching any location`);
+      out.push(`${L1}# Browsers send OPTIONS before complex cross-origin requests; it must be answered correctly, otherwise the actual request is blocked`);
+    }
+    out.push(`${L1}rewrite_by_lua_block {`);
+    out.push(`${L2}if ngx.req.get_method() == "OPTIONS" then`);
+    out.push(`${L3}local origin = ngx.req.get_headers()["Origin"] or ""`);
+    out.push('');
+
+    if (withComments) {
+      out.push(`${L3}-- Same whitelist; only respond to preflight for allowed origins`);
+    }
+    // Shift the origin if-block one level deeper for the rewrite block.
+    buildOriginIf(origins, L3).forEach((l) => out.push(l));
+
+    out.push(`${L4}ngx.header["Access-Control-Allow-Origin"]      = origin`);
+    out.push(`${L4}ngx.header["Access-Control-Allow-Methods"]     = "${methodsStr}"`);
+    out.push(`${L4}ngx.header["Access-Control-Allow-Headers"]     = "${headersStr}"`);
+    if (creds) {
+      out.push(`${L4}ngx.header["Access-Control-Allow-Credentials"] = "true"`);
+    }
+    if (maxAgeS > 0) {
+      if (withComments) {
+        out.push(`${L4}-- Cache the preflight result for ${maxAgeS.toLocaleString()} seconds (${maxAgeH} hours), reducing repeated OPTIONS requests`);
+      }
+      out.push(`${L4}ngx.header["Access-Control-Max-Age"]           = "${maxAgeS}"`);
+    }
+    out.push(`${L4}ngx.status = 204`);
+    out.push(`${L4}ngx.exit(204)`);
+    out.push(`${L3}end`);
+    out.push(`${L2}end`);
+    out.push(`${L1}}`);
+
+    const code = out.join('\n');
+
+    $('codePlaceholder').style.display = 'none';
+    const pre = $('codeOutput');
+    pre.textContent = code;
+    pre.style.display = 'block';
+
+    if (window.innerWidth < 960) {
+      pre.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  // ── Copy ─────────────────────────────────────────────────────────────────────
+  function copyCode() {
+    const code = $('codeOutput').textContent;
+    if (!code) return;
+    navigator.clipboard.writeText(code).then(() => {
+      const btn = $('copyBtn');
+      btn.textContent = 'Copied';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = 'Copy';
+        btn.classList.remove('copied');
+      }, 2000);
+    });
+  }
+
+  $('genBtn').addEventListener('click', generate);
+  $('copyBtn').addEventListener('click', copyCode);
+
+  // ── Boot ─────────────────────────────────────────────────────────────────────
+  initCheckboxes();
+</script>

@@ -1,0 +1,382 @@
+---
+import ToolLayout from '../../layouts/ToolLayout.astro';
+import { TOOLS } from '../../data/tools.js';
+
+const tool = TOOLS.find((t) => t.id === 'nginx-config-formatter');
+---
+<ToolLayout tool={tool}>
+  <div class="ncf">
+    <div class="ncf-actions">
+      <button type="button" class="btn btn-primary" id="ncf-format">Format</button>
+      <button type="button" class="btn" id="ncf-sample">Load sample</button>
+      <button type="button" class="btn" id="ncf-clear">Clear</button>
+    </div>
+
+    <div class="ncf-grid">
+      <div class="ncf-panel">
+        <div class="ncf-panel-head">
+          <span class="ncf-panel-title">Input</span>
+          <span class="ncf-stat" id="ncf-input-stat">0 lines</span>
+        </div>
+        <textarea
+          class="field mono"
+          id="ncf-input"
+          rows="20"
+          spellcheck="false"
+          placeholder="Paste your Nginx or OpenResty config here…"
+        ></textarea>
+      </div>
+
+      <div class="ncf-panel">
+        <div class="ncf-panel-head">
+          <span class="ncf-panel-title">Output</span>
+          <span class="ncf-stat-group">
+            <span class="ncf-stat" id="ncf-output-stat">0 lines</span>
+            <span class="ncf-msg" id="ncf-output-msg"></span>
+          </span>
+        </div>
+        <textarea
+          class="field mono"
+          id="ncf-output"
+          rows="20"
+          readonly
+          spellcheck="false"
+          placeholder="Formatted result will appear here…"
+        ></textarea>
+        <div class="ncf-out-actions">
+          <button type="button" class="btn" id="ncf-copy">Copy</button>
+        </div>
+      </div>
+    </div>
+
+    <p class="ncf-hint">Tip: press Ctrl/Cmd + Enter to format. Handles indentation inside <code>*_by_lua_block</code> directives.</p>
+  </div>
+</ToolLayout>
+
+<style>
+  .ncf { display: flex; flex-direction: column; gap: 16px; }
+  .ncf-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  .ncf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .ncf-panel { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .ncf-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .ncf-panel-title { font-size: 13px; font-weight: 600; }
+  .ncf-stat-group { display: flex; align-items: center; gap: 12px; }
+  .ncf-stat { font-size: 12px; color: var(--muted); }
+  .ncf-msg { font-size: 12px; color: var(--muted); }
+  .ncf-msg.ok { color: var(--fg); }
+  .ncf textarea.field { resize: vertical; }
+  .ncf-out-actions { display: flex; gap: 8px; }
+  .ncf-hint { font-size: 13px; color: var(--muted); margin: 0; }
+  .ncf-hint code { font-family: var(--mono); font-size: 12px; }
+
+  @media (max-width: 720px) {
+    .ncf-grid { grid-template-columns: 1fr; }
+  }
+</style>
+
+<script>
+  // ───────────────────────────────────────────────────────────────────────────
+  // Formatter core
+  // ───────────────────────────────────────────────────────────────────────────
+
+  const INDENT = '    '; // 4 spaces
+  const ind = (n) => INDENT.repeat(Math.max(0, n));
+
+  /**
+   * Count net brace balance of a line, ignoring content inside:
+   *   - Lua single-line comments (-- ...)
+   *   - Single-quoted strings
+   *   - Double-quoted strings
+   * Returns delta: positive = more { than }, negative = more } than {
+   */
+  function netBraces(line) {
+    let balance = 0;
+    let inDouble = false;
+    let inSingle = false;
+
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+
+      if (!inDouble && !inSingle) {
+        // Lua comment: ignore rest of line
+        if (c === '-' && line[i + 1] === '-') break;
+        // Nginx comment: ignore rest of line
+        if (c === '#') break;
+
+        if (c === '"') { inDouble = true; continue; }
+        if (c === "'") { inSingle = true; continue; }
+        if (c === '{') { balance++; }
+        if (c === '}') { balance--; }
+      } else if (inDouble && c === '"' && line[i - 1] !== '\\') {
+        inDouble = false;
+      } else if (inSingle && c === "'" && line[i - 1] !== '\\') {
+        inSingle = false;
+      }
+    }
+    return balance;
+  }
+
+  /**
+   * Detect whether a line opens a Lua block directive.
+   * Matches patterns like:
+   *   header_filter_by_lua_block {
+   *   rewrite_by_lua_block {
+   *   content_by_lua_block {
+   *   access_by_lua_block {
+   *   set_by_lua_block {  (etc.)
+   */
+  function isLuaBlockOpener(line) {
+    return /\b\w+_by_lua_block\s*\{/.test(line) ||
+           /\bset_by_lua_block\s*\{/.test(line);
+  }
+
+  /**
+   * Lua indentation: keywords that dedent the current line (before output).
+   * Must be checked before outputting.
+   */
+  function luaDedentBefore(line) {
+    return /^end\b/.test(line) ||
+           /^else\b/.test(line) ||
+           /^elseif\b/.test(line);
+  }
+
+  /**
+   * Lua indentation: patterns that indent the next line (after output).
+   */
+  function luaIndentAfter(line) {
+    // Ends with 'then' (if ... then, or standalone 'then')
+    if (/\bthen$/.test(line)) return true;
+    // Ends with 'do' (for/while/do)
+    if (/\bdo$/.test(line)) return true;
+    // Standalone 'else'
+    if (/^else$/.test(line)) return true;
+    // Function definition ending with )
+    if (/^function\b/.test(line) && /\)$/.test(line)) return true;
+    return false;
+  }
+
+  function formatNginxConfig(raw) {
+    // Split and trim all lines
+    const rawLines = raw.split('\n').map((l) => l.trim());
+
+    const out = [];
+    let nginxDepth = 0;
+    let inLua = false;
+    let luaDepth = 0;
+    let luaBraceBalance = 0;
+    let prevBlank = false;
+
+    for (const line of rawLines) {
+      // ── Blank lines ──────────────────────────────────────────
+      if (line === '') {
+        // Collapse consecutive blanks into one
+        if (!prevBlank && out.length > 0) {
+          out.push('');
+          prevBlank = true;
+        }
+        continue;
+      }
+      prevBlank = false;
+
+      // ── NGINX MODE ───────────────────────────────────────────
+      if (!inLua) {
+        // Closing brace(s): dedent before output
+        if (line.startsWith('}')) {
+          nginxDepth = Math.max(0, nginxDepth - 1);
+          out.push(ind(nginxDepth) + line);
+
+          // A line like "} else {" or just "}" — handle opening after
+          if (line.endsWith('{')) nginxDepth++;
+          continue;
+        }
+
+        out.push(ind(nginxDepth) + line);
+
+        // Opening brace: indent after
+        if (line.endsWith('{')) {
+          nginxDepth++;
+          // Entering a Lua block?
+          if (isLuaBlockOpener(line)) {
+            inLua = true;
+            luaDepth = 0;
+            luaBraceBalance = 1; // the { on this line
+          }
+        }
+
+        // ── LUA MODE ─────────────────────────────────────────────
+      } else {
+        // Track braces to detect end of lua block
+        luaBraceBalance += netBraces(line);
+
+        // Balance reached 0: this line closes the lua block
+        if (luaBraceBalance <= 0) {
+          inLua = false;
+          nginxDepth = Math.max(0, nginxDepth - 1);
+          out.push(ind(nginxDepth) + '}');
+          continue;
+        }
+
+        // Lua keyword dedent (before output)
+        if (luaDedentBefore(line)) {
+          luaDepth = Math.max(0, luaDepth - 1);
+        }
+
+        out.push(ind(nginxDepth + luaDepth) + line);
+
+        // Lua keyword indent (after output)
+        if (luaIndentAfter(line)) {
+          luaDepth++;
+        }
+      }
+    }
+
+    // Remove trailing blank lines
+    while (out.length > 0 && out[out.length - 1] === '') out.pop();
+
+    return out.join('\n');
+  }
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // UI
+  // ───────────────────────────────────────────────────────────────────────────
+
+  const $ = (id) => document.getElementById(id);
+  const inputEl = $('ncf-input');
+  const outputEl = $('ncf-output');
+
+  function updateInputStat() {
+    const lines = inputEl.value.split('\n').length;
+    const chars = inputEl.value.length;
+    $('ncf-input-stat').textContent = `${lines} lines · ${chars} chars`;
+  }
+
+  function doFormat() {
+    const raw = inputEl.value;
+    if (!raw.trim()) return;
+
+    const result = formatNginxConfig(raw);
+    outputEl.value = result;
+
+    const outLines = result.split('\n').length;
+    $('ncf-output-stat').textContent = `${outLines} lines · ${result.length} chars`;
+
+    const msg = $('ncf-output-msg');
+    msg.textContent = 'Formatted';
+    msg.className = 'ncf-msg ok';
+    setTimeout(() => {
+      msg.textContent = '';
+      msg.className = 'ncf-msg';
+    }, 3000);
+  }
+
+  function copyOutput() {
+    const text = outputEl.value;
+    if (!text) return;
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = $('ncf-copy');
+      const prev = btn.textContent;
+      btn.textContent = 'Copied';
+      setTimeout(() => { btn.textContent = prev; }, 2000);
+    });
+  }
+
+  function clearAll() {
+    inputEl.value = '';
+    outputEl.value = '';
+    $('ncf-input-stat').textContent = '0 lines';
+    $('ncf-output-stat').textContent = '0 lines';
+    $('ncf-output-msg').textContent = '';
+    inputEl.focus();
+  }
+
+  // Support Ctrl/Cmd + Enter to format
+  document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      doFormat();
+    }
+  });
+
+  inputEl.addEventListener('input', updateInputStat);
+  $('ncf-format').addEventListener('click', doFormat);
+  $('ncf-copy').addEventListener('click', copyOutput);
+  $('ncf-clear').addEventListener('click', clearAll);
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Sample
+  // ───────────────────────────────────────────────────────────────────────────
+
+  const SAMPLE = `server {
+listen 80;
+server_name mis.ropean.org;
+index index.php index.html index.htm default.php default.htm default.html;
+
+proxy_set_header Host $host;
+proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+proxy_set_header X-Forwarded-Host $server_name;
+proxy_set_header X-Real-IP $remote_addr;
+proxy_http_version 1.1;
+proxy_set_header Upgrade $http_upgrade;
+proxy_set_header Connection $http_connection;
+
+access_log /www/sites/mis.ropean.org/log/access.log main;
+error_log  /www/sites/mis.ropean.org/log/error.log;
+
+# CORS: inject headers during the response filter phase
+header_filter_by_lua_block {
+local origin = ngx.req.get_headers()["Origin"] or ""
+
+-- Whitelist: allow specific domains (exact match)
+if origin:match("^https?://(music%.ropean%.org)$")
+or origin:match("^https?://(music%.aceapp%.dev)$")
+then
+-- Echo back the requester's origin exactly
+ngx.header["Access-Control-Allow-Origin"]      = origin
+ngx.header["Access-Control-Allow-Methods"]     = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+ngx.header["Access-Control-Allow-Headers"]     = "Content-Type, Authorization, X-Requested-With"
+ngx.header["Access-Control-Allow-Credentials"] = "true"
+ngx.header["Vary"]                             = "Origin"
+end
+}
+
+# CORS: intercept OPTIONS preflight requests during the rewrite phase
+rewrite_by_lua_block {
+if ngx.req.get_method() == "OPTIONS" then
+local origin = ngx.req.get_headers()["Origin"] or ""
+
+-- Same whitelist: respond to preflight only for allowed origins
+if origin:match("^https?://(music%.ropean%.org)$")
+or origin:match("^https?://(music%.aceapp%.dev)$")
+then
+ngx.header["Access-Control-Allow-Origin"]      = origin
+ngx.header["Access-Control-Allow-Methods"]     = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+ngx.header["Access-Control-Allow-Headers"]     = "Content-Type, Authorization, X-Requested-With"
+ngx.header["Access-Control-Allow-Credentials"] = "true"
+ngx.header["Access-Control-Max-Age"]           = "86400"
+ngx.status = 204
+ngx.exit(204)
+end
+end
+}
+
+location ^~ /.well-known/acme-challenge {
+allow all;
+root /usr/share/nginx/html;
+}
+
+location / {
+root /www/sites/mis.ropean.org/index;
+try_files $uri $uri/ =404;
+}
+
+error_page 404 /404.html;
+}`;
+
+  function loadSample() {
+    inputEl.value = SAMPLE;
+    updateInputStat();
+    doFormat();
+  }
+
+  $('ncf-sample').addEventListener('click', loadSample);
+</script>

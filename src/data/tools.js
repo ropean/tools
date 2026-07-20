@@ -1,8 +1,9 @@
 // Tool catalog and categories.
-// Each tool: { id, category, name, desc, ready, href? }
-//  - ready:false  → shows a "Coming soon" badge and renders a placeholder page.
-//  - href present → links directly to a standalone HTML tool in public/ (opens that file).
-//  - no href      → an in-site page is generated at /tools/<id>.html by src/pages/tools/[id].astro.
+// Each tool: { id, category, name, desc, ready }
+//  - ready:true   → has a native Astro page at src/pages/tools/<id>.astro.
+//  - ready:false  → shows a "Coming soon" badge; a placeholder page is generated
+//                   at /tools/<id>.html by src/pages/tools/[id].astro.
+// Every card / switcher entry links to /tools/<id>.html (see toolHref).
 
 export const CATEGORIES = [
   { key: 'text', label: 'Text' },
@@ -13,14 +14,13 @@ export const CATEGORIES = [
 ];
 
 export const TOOLS = [
-  // --- Live standalone tools (existing self-contained HTML in public/) ---
+  // --- Live tools (native Astro pages under src/pages/tools/) ---
   {
     id: 'dns-checker',
     category: 'dev',
     name: 'DNS Checker',
     desc: 'Query and inspect DNS records for any domain.',
     ready: true,
-    href: '/dns-checker.html',
   },
   {
     id: 'nginx-config-formatter',
@@ -28,7 +28,6 @@ export const TOOLS = [
     name: 'Nginx Config Formatter',
     desc: 'Format and beautify Nginx configuration files.',
     ready: true,
-    href: '/nginx-config-formatter.html',
   },
   {
     id: 'openresty-cors-generator',
@@ -36,7 +35,6 @@ export const TOOLS = [
     name: 'OpenResty CORS Generator',
     desc: 'Generate CORS configuration snippets for OpenResty and Nginx.',
     ready: true,
-    href: '/openresty-cors-generator.html',
   },
   {
     id: 'htaccess-rewrite',
@@ -44,7 +42,6 @@ export const TOOLS = [
     name: '.htaccess Rewrite Rules',
     desc: 'Build Apache rewrite rules visually.',
     ready: true,
-    href: '/rewrite_rules_htaccess.html',
   },
   {
     id: 'random-string-generator',
@@ -52,7 +49,6 @@ export const TOOLS = [
     name: 'Random String Generator',
     desc: 'Generate random strings, tokens and passwords.',
     ready: true,
-    href: '/Random-String-Generator.html',
   },
 
   // --- Planned tools (in-site placeholder pages) ---

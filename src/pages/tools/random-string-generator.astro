@@ -1,0 +1,114 @@
+---
+import ToolLayout from '../../layouts/ToolLayout.astro';
+import { TOOLS } from '../../data/tools.js';
+
+const tool = TOOLS.find((t) => t.id === 'random-string-generator');
+---
+<ToolLayout tool={tool}>
+  <div class="rsg">
+    <div class="rsg-field">
+      <span class="rsg-label">Character sets</span>
+      <div class="rsg-checks">
+        <label><input type="checkbox" id="rsg-upper" checked /> Uppercase (A–Z)</label>
+        <label><input type="checkbox" id="rsg-lower" checked /> Lowercase (a–z)</label>
+        <label><input type="checkbox" id="rsg-num" checked /> Numbers (0–9)</label>
+        <label><input type="checkbox" id="rsg-special" /> Special (<code>`~!@#$%^&-+=</code>)</label>
+      </div>
+    </div>
+
+    <div class="rsg-row">
+      <div class="rsg-field">
+        <label class="rsg-label" for="rsg-len">Length</label>
+        <input class="field" type="number" id="rsg-len" value="20" min="1" max="4096" />
+      </div>
+      <div class="rsg-field">
+        <label class="rsg-label" for="rsg-count">How many</label>
+        <input class="field" type="number" id="rsg-count" value="1" min="1" max="1000" />
+      </div>
+    </div>
+
+    <div class="rsg-actions">
+      <button type="button" class="btn btn-primary" id="rsg-gen">Generate</button>
+      <button type="button" class="btn" id="rsg-copy">Copy</button>
+    </div>
+
+    <div class="rsg-field">
+      <label class="rsg-label" for="rsg-result">Result</label>
+      <textarea class="field mono" id="rsg-result" rows="6" readonly spellcheck="false"></textarea>
+      <p class="rsg-error" id="rsg-error" hidden>Select at least one character set.</p>
+    </div>
+  </div>
+</ToolLayout>
+
+<style>
+  .rsg { display: flex; flex-direction: column; gap: 20px; max-width: 640px; }
+  .rsg-field { display: flex; flex-direction: column; gap: 6px; }
+  .rsg-label { font-size: 12px; color: var(--muted); }
+  .rsg-checks { display: flex; flex-wrap: wrap; gap: 12px 20px; }
+  .rsg-checks label { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; }
+  .rsg-checks code { font-family: var(--mono); font-size: 12px; }
+  .rsg-row { display: flex; flex-wrap: wrap; gap: 16px; }
+  .rsg-row .rsg-field { flex: 1 1 160px; }
+  .rsg-actions { display: flex; gap: 8px; }
+  .rsg-error { color: var(--error); font-size: 13px; margin: 0; }
+</style>
+
+<script>
+  // Random string generator — uses crypto for unbiased randomness.
+  const SETS = {
+    'rsg-upper': 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+    'rsg-lower': 'abcdefghijklmnopqrstuvwxyz',
+    'rsg-num': '0123456789',
+    'rsg-special': '`~!@#$%^&-+=',
+  };
+
+  const $ = (id) => document.getElementById(id);
+  const resultEl = $('rsg-result');
+  const errorEl = $('rsg-error');
+
+  function pool() {
+    let chars = '';
+    for (const id of Object.keys(SETS)) {
+      if ($(id).checked) chars += SETS[id];
+    }
+    return chars;
+  }
+
+  function randomInt(max) {
+    // Rejection sampling to avoid modulo bias.
+    const limit = Math.floor(0xffffffff / max) * max;
+    const buf = new Uint32Array(1);
+    let x;
+    do { crypto.getRandomValues(buf); x = buf[0]; } while (x >= limit);
+    return x % max;
+  }
+
+  function generate() {
+    const chars = pool();
+    errorEl.hidden = chars.length > 0;
+    if (!chars) { resultEl.value = ''; return; }
+
+    const length = Math.max(1, parseInt($('rsg-len').value, 10) || 1);
+    const count = Math.max(1, parseInt($('rsg-count').value, 10) || 1);
+
+    const lines = [];
+    for (let i = 0; i < count; i++) {
+      let s = '';
+      for (let j = 0; j < length; j++) s += chars[randomInt(chars.length)];
+      lines.push(s);
+    }
+    resultEl.value = lines.join('\n');
+  }
+
+  $('rsg-gen').addEventListener('click', generate);
+  $('rsg-copy').addEventListener('click', async () => {
+    if (!resultEl.value) return;
+    await navigator.clipboard.writeText(resultEl.value);
+    const btn = $('rsg-copy');
+    const prev = btn.textContent;
+    btn.textContent = 'Copied';
+    setTimeout(() => { btn.textContent = prev; }, 1200);
+  });
+
+  generate();
+</script>
