@@ -13,16 +13,20 @@ const FAVICON_ALIASES = {
   github: 'https://github.githubassets.com/favicons/favicon.svg',
 };
 
-// Favicon candidates, tried in order; on the last failure we fall back to the
-// category icon. tool.favicon overrides the URL (a known alias or a full URL).
-let favicons = [];
+// Resolve tool.favicon explicitly — no auto-guessing:
+//   'github'    → alias URL
+//   'svg'/'ico' → <external origin>/favicon.svg | .ico
+//   full URL    → used as-is
+// A tool without `favicon` just uses its icon / category icon.
+let faviconUrl = null;
 if (tool.favicon) {
-  favicons = [FAVICON_ALIASES[tool.favicon] ?? tool.favicon];
-} else if (tool.external) {
-  try {
-    const origin = new URL(tool.external).origin;
-    favicons = [origin + '/favicon.svg', origin + '/favicon.ico'];
-  } catch { /* bad URL */ }
+  if (FAVICON_ALIASES[tool.favicon]) {
+    faviconUrl = FAVICON_ALIASES[tool.favicon];
+  } else if ((tool.favicon === 'svg' || tool.favicon === 'ico') && tool.external) {
+    try { faviconUrl = new URL(tool.external).origin + '/favicon.' + tool.favicon; } catch { /* bad URL */ }
+  } else {
+    faviconUrl = tool.favicon;
+  }
 }
 
 const svg = {
@@ -37,10 +41,10 @@ const svg = {
 };
 const name = tool.icon;
 ---
-{favicons.length ? (
+{faviconUrl ? (
   <span class="ti-fav">
-    <img src={favicons[0]} data-next={favicons[1] ?? ''} alt="" width={size + 2} height={size + 2} loading="lazy"
-         onerror="var n=this.dataset.next; if(n){this.dataset.next='';this.src=n;}else{this.closest('.ti-fav').classList.add('failed');}" />
+    <img src={faviconUrl} alt="" width={size + 2} height={size + 2} loading="lazy"
+         onerror="this.closest('.ti-fav').classList.add('failed')" />
     <span class="ti-fallback"><CategoryIcon category={tool.category} size={size} /></span>
   </span>
 ) : name === 'globe' ? (
