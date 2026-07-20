@@ -1,0 +1,208 @@
+---
+import ToolLayout from '../layouts/ToolLayout.astro';
+import { TOOLS } from '../data/tools.js';
+
+const tool = TOOLS.find((t) => t.id === 'world-clock');
+---
+<ToolLayout tool={tool}>
+  <div class="wc">
+    <div class="wc-bar">
+      <div class="wc-add">
+        <input type="text" class="field" id="wc-input" list="wc-zones" placeholder="Add a time zone, e.g. Asia/Shanghai" autocomplete="off" />
+        <datalist id="wc-zones"></datalist>
+        <button type="button" class="btn btn-primary" id="wc-add">Add</button>
+        <button type="button" class="btn" id="wc-add-local">Add my time zone</button>
+      </div>
+      <label class="wc-toggle"><input type="checkbox" id="wc-hour12" /> 12-hour</label>
+    </div>
+
+    <div class="wc-grid" id="wc-grid"></div>
+    <p class="wc-empty" id="wc-empty" hidden>No clocks yet. Add a time zone above.</p>
+  </div>
+</ToolLayout>
+
+<style>
+  .wc { display: flex; flex-direction: column; gap: 18px; }
+  .wc-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+  .wc-add { display: flex; flex-wrap: wrap; gap: 8px; flex: 1 1 auto; }
+  .wc-add .field { flex: 1 1 240px; min-width: 200px; }
+  .wc-toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: var(--muted); white-space: nowrap; }
+
+  .wc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+  .wc-card {
+    position: relative;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--bg);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .wc-zone { font-size: 14px; font-weight: 600; padding-right: 24px; }
+  .wc-offset { font-size: 12px; color: var(--muted); }
+  .wc-time { font-family: var(--mono); font-size: 34px; font-weight: 600; letter-spacing: -0.02em; margin: 6px 0 2px; font-variant-numeric: tabular-nums; }
+  .wc-date { font-size: 13px; color: var(--muted); }
+  .wc-remove {
+    position: absolute; top: 12px; right: 12px;
+    width: 24px; height: 24px; border-radius: 6px;
+    border: none; background: transparent; color: var(--muted);
+    cursor: pointer; font-size: 16px; line-height: 1;
+  }
+  .wc-remove:hover { background: var(--subtle); color: var(--fg); }
+  .wc-empty { text-align: center; color: var(--muted); padding: 48px 24px; margin: 0; }
+</style>
+
+<script>
+  // World Clock — live clocks for chosen time zones, persisted in localStorage.
+  const KEY = 'world-clock.v1';
+  const grid = document.getElementById('wc-grid');
+  const emptyEl = document.getElementById('wc-empty');
+  const input = document.getElementById('wc-input');
+  const hour12El = document.getElementById('wc-hour12');
+
+  // { zones: string[], hour12: boolean }
+  let state = load();
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed.zones)) return { zones: parsed.zones, hour12: !!parsed.hour12 };
+      }
+    } catch { /* ignore corrupt storage */ }
+    return { zones: ['UTC'], hour12: false }; // default: UTC only
+  }
+
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch { /* quota/private mode */ }
+  }
+
+  function isValidZone(z) {
+    try { new Intl.DateTimeFormat('en', { timeZone: z }); return true; } catch { return false; }
+  }
+
+  // Populate the datalist with all IANA zones the runtime knows.
+  function allZones() {
+    if (typeof Intl.supportedValuesOf === 'function') {
+      try { return Intl.supportedValuesOf('timeZone'); } catch { /* fall through */ }
+    }
+    return ['UTC', 'America/New_York', 'America/Los_Angeles', 'America/Chicago',
+      'Europe/London', 'Europe/Paris', 'Europe/Berlin', 'Europe/Moscow',
+      'Asia/Shanghai', 'Asia/Hong_Kong', 'Asia/Tokyo', 'Asia/Singapore',
+      'Asia/Kolkata', 'Asia/Dubai', 'Australia/Sydney'];
+  }
+
+  const dl = document.getElementById('wc-zones');
+  for (const z of allZones()) {
+    const opt = document.createElement('option');
+    opt.value = z;
+    dl.appendChild(opt);
+  }
+
+  // Cache Intl formatters per zone (rebuilt when the 12/24h option changes).
+  let timeFmt = new Map();
+  let dateFmt = new Map();
+  let offsetFmt = new Map();
+  function resetFormatters() { timeFmt.clear(); dateFmt.clear(); offsetFmt.clear(); }
+
+  function fmt(cache, zone, opts) {
+    let f = cache.get(zone);
+    if (!f) { f = new Intl.DateTimeFormat('en-GB', { timeZone: zone, ...opts }); cache.set(zone, f); }
+    return f;
+  }
+
+  function offsetOf(zone, now) {
+    const f = fmt(offsetFmt, zone, { timeZoneName: 'shortOffset', hour: '2-digit' });
+    const part = f.formatToParts(now).find((p) => p.type === 'timeZoneName');
+    return part ? part.value : '';
+  }
+
+  // Map of zone -> { timeEl, dateEl } so ticks only touch text, not the DOM tree.
+  let refs = new Map();
+
+  function renderCards() {
+    grid.textContent = '';
+    refs = new Map();
+    emptyEl.hidden = state.zones.length > 0;
+
+    for (const zone of state.zones) {
+      const card = document.createElement('div');
+      card.className = 'wc-card';
+
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'wc-remove';
+      remove.setAttribute('aria-label', 'Remove ' + zone);
+      remove.textContent = '×';
+      remove.addEventListener('click', () => removeZone(zone));
+
+      const zoneEl = document.createElement('div');
+      zoneEl.className = 'wc-zone';
+      zoneEl.textContent = zone.replace(/_/g, ' ');
+
+      const offsetEl = document.createElement('div');
+      offsetEl.className = 'wc-offset';
+
+      const timeEl = document.createElement('div');
+      timeEl.className = 'wc-time';
+
+      const dateEl = document.createElement('div');
+      dateEl.className = 'wc-date';
+
+      card.append(remove, zoneEl, offsetEl, timeEl, dateEl);
+      grid.appendChild(card);
+      refs.set(zone, { timeEl, dateEl, offsetEl });
+    }
+    tick();
+  }
+
+  function tick() {
+    const now = new Date();
+    for (const [zone, r] of refs) {
+      r.timeEl.textContent = fmt(timeFmt, zone, {
+        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: state.hour12,
+      }).format(now);
+      r.dateEl.textContent = fmt(dateFmt, zone, {
+        weekday: 'short', year: 'numeric', month: 'short', day: 'numeric',
+      }).format(now);
+      r.offsetEl.textContent = offsetOf(zone, now);
+    }
+  }
+
+  function addZone(zone) {
+    zone = (zone || '').trim();
+    if (!zone) return;
+    if (!isValidZone(zone)) { input.setCustomValidity('Unknown time zone'); input.reportValidity(); return; }
+    input.setCustomValidity('');
+    if (!state.zones.includes(zone)) {
+      state.zones.push(zone);
+      save();
+      renderCards();
+    }
+    input.value = '';
+  }
+
+  function removeZone(zone) {
+    state.zones = state.zones.filter((z) => z !== zone);
+    save();
+    renderCards();
+  }
+
+  document.getElementById('wc-add').addEventListener('click', () => addZone(input.value));
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addZone(input.value); } });
+  document.getElementById('wc-add-local').addEventListener('click', () => {
+    addZone(Intl.DateTimeFormat().resolvedOptions().timeZone);
+  });
+  hour12El.checked = state.hour12;
+  hour12El.addEventListener('change', () => {
+    state.hour12 = hour12El.checked;
+    save();
+    resetFormatters();
+    tick();
+  });
+
+  renderCards();
+  setInterval(tick, 1000);
+</script>

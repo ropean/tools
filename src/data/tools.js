@@ -62,7 +62,7 @@ export const TOOLS = [
   { id: 'image-converter', category: 'media', name: 'Image Converter', desc: 'Convert images between formats. Opens ic.ropean.org.', external: 'https://ic.ropean.org/', ready: true },
   { id: 'qr-generator', category: 'media', name: 'QR Code Generator', desc: 'Turn text or links into QR codes.', ready: false },
   { id: 'unit-converter', category: 'calc', name: 'Unit Converter', desc: 'Convert length, weight, temperature and more.', ready: false },
-  { id: 'timestamp-converter', category: 'calc', name: 'Timestamp Converter', desc: 'Convert between Unix timestamps and dates.', ready: false },
+  { id: 'world-clock', category: 'daily', name: 'World Clock', desc: 'See the current time around the world; add your own clocks, saved locally.', ready: true },
 ];
 
 // The link target for a tool card / switcher entry: the external URL for
