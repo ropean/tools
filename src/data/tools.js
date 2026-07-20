@@ -60,7 +60,7 @@ export const TOOLS = [
   { id: 'regex-tester', category: 'dev', name: 'Regex Tester', desc: 'Test regular expressions against text in real time.', ready: false },
   { id: 'cron-builder', category: 'dev', name: 'Cron Builder', desc: 'Build cron schedule expressions visually.', ready: false },
   { id: 'image-converter', category: 'media', name: 'Image Converter', desc: 'Convert images between formats. Opens ic.ropean.org.', external: 'https://ic.ropean.org/', ready: true },
-  { id: 'qr-generator', category: 'media', name: 'QR Code Generator', desc: 'Turn text or links into QR codes.', ready: false },
+  { id: 'qr-generator', category: 'media', name: 'QR Code Generator', desc: 'Turn text or a link into a downloadable QR code (PNG or SVG).', ready: true },
   { id: 'unit-converter', category: 'calc', name: 'Unit Converter', desc: 'Convert length, weight, temperature and more.', ready: false },
   { id: 'world-clock', category: 'daily', name: 'World Clock', desc: 'See the current time around the world; add your own clocks, saved locally.', ready: true },
 ];

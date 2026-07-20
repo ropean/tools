@@ -1,0 +1,195 @@
+---
+import ToolLayout from '../layouts/ToolLayout.astro';
+import { TOOLS } from '../data/tools.js';
+
+const tool = TOOLS.find((t) => t.id === 'qr-generator');
+---
+<ToolLayout tool={tool}>
+  <div class="qr">
+    <div class="qr-controls">
+      <div class="qr-field">
+        <label class="qr-label" for="qr-text">Text or URL</label>
+        <textarea class="field mono" id="qr-text" rows="4" spellcheck="false" placeholder="https://example.com">https://qingtools.app</textarea>
+      </div>
+
+      <div class="qr-row">
+        <div class="qr-field">
+          <label class="qr-label" for="qr-ecl">Error correction</label>
+          <select class="field" id="qr-ecl">
+            <option value="L">L — 7%</option>
+            <option value="M" selected>M — 15%</option>
+            <option value="Q">Q — 25%</option>
+            <option value="H">H — 30%</option>
+          </select>
+        </div>
+        <div class="qr-field">
+          <label class="qr-label" for="qr-size">Size (px)</label>
+          <input class="field" type="number" id="qr-size" value="320" min="80" max="2000" step="8" />
+        </div>
+        <div class="qr-field">
+          <label class="qr-label" for="qr-margin">Quiet zone</label>
+          <input class="field" type="number" id="qr-margin" value="4" min="0" max="16" />
+        </div>
+      </div>
+
+      <div class="qr-row">
+        <div class="qr-field qr-color">
+          <label class="qr-label" for="qr-dark">Foreground</label>
+          <input type="color" id="qr-dark" value="#1c1c1c" />
+        </div>
+        <div class="qr-field qr-color">
+          <label class="qr-label" for="qr-light">Background</label>
+          <input type="color" id="qr-light" value="#ffffff" />
+        </div>
+      </div>
+
+      <p class="qr-msg" id="qr-msg" hidden></p>
+    </div>
+
+    <div class="qr-preview">
+      <div class="qr-canvas-wrap">
+        <canvas id="qr-canvas" width="320" height="320" aria-label="QR code preview"></canvas>
+      </div>
+      <div class="qr-actions">
+        <button type="button" class="btn btn-primary" id="qr-png">Download PNG</button>
+        <button type="button" class="btn" id="qr-svg">Download SVG</button>
+      </div>
+    </div>
+  </div>
+</ToolLayout>
+
+<style>
+  .qr { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; }
+  .qr-controls { flex: 1 1 300px; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+  .qr-field { display: flex; flex-direction: column; gap: 6px; }
+  .qr-label { font-size: 12px; color: var(--muted); }
+  .qr-row { display: flex; flex-wrap: wrap; gap: 12px; }
+  .qr-row .qr-field { flex: 1 1 120px; }
+  .qr-color input[type='color'] {
+    width: 100%; height: 40px; padding: 4px;
+    border: 1px solid var(--border); border-radius: var(--radius);
+    background: var(--bg); cursor: pointer;
+  }
+  .qr-msg { margin: 0; font-size: 13px; color: var(--error); }
+
+  .qr-preview { flex: 1 1 300px; display: flex; flex-direction: column; gap: 16px; align-items: center; }
+  .qr-canvas-wrap {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--subtle-2);
+    padding: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #qr-canvas { max-width: 100%; height: auto; image-rendering: pixelated; border-radius: 4px; }
+  .qr-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+</style>
+
+<script>
+  import qrcode from 'qrcode-generator';
+
+  const $ = (id) => document.getElementById(id);
+  const textEl = $('qr-text');
+  const eclEl = $('qr-ecl');
+  const sizeEl = $('qr-size');
+  const marginEl = $('qr-margin');
+  const darkEl = $('qr-dark');
+  const lightEl = $('qr-light');
+  const canvas = $('qr-canvas');
+  const ctx = canvas.getContext('2d');
+  const msgEl = $('qr-msg');
+
+  let model = null; // last successful QR model, for exports
+
+  function setMsg(text) {
+    if (!text) { msgEl.hidden = true; msgEl.textContent = ''; return; }
+    msgEl.hidden = false;
+    msgEl.textContent = text;
+  }
+
+  function build() {
+    const text = textEl.value;
+    if (!text) { model = null; ctx.clearRect(0, 0, canvas.width, canvas.height); setMsg(''); return; }
+    try {
+      const qr = qrcode(0, eclEl.value); // 0 = auto-pick smallest version
+      qr.addData(text);
+      qr.make();
+      model = qr;
+      setMsg('');
+      draw();
+    } catch (err) {
+      model = null;
+      setMsg('Cannot encode: ' + (err && err.message ? err.message : 'text too long for this level.'));
+    }
+  }
+
+  function geometry() {
+    const count = model.getModuleCount();
+    const margin = Math.max(0, parseInt(marginEl.value, 10) || 0);
+    const total = count + margin * 2;
+    const target = Math.max(80, parseInt(sizeEl.value, 10) || 320);
+    const scale = Math.max(1, Math.floor(target / total)); // integer px per module = crisp
+    return { count, margin, total, scale, dim: scale * total };
+  }
+
+  function draw() {
+    if (!model) return;
+    const { count, margin, scale, dim } = geometry();
+    canvas.width = dim;
+    canvas.height = dim;
+    ctx.fillStyle = lightEl.value;
+    ctx.fillRect(0, 0, dim, dim);
+    ctx.fillStyle = darkEl.value;
+    for (let r = 0; r < count; r++) {
+      for (let c = 0; c < count; c++) {
+        if (model.isDark(r, c)) ctx.fillRect((c + margin) * scale, (r + margin) * scale, scale, scale);
+      }
+    }
+  }
+
+  function svgString() {
+    const { count, margin, total } = geometry();
+    let path = '';
+    for (let r = 0; r < count; r++) {
+      for (let c = 0; c < count; c++) {
+        if (model.isDark(r, c)) path += 'M' + (c + margin) + ' ' + (r + margin) + 'h1v1h-1z';
+      }
+    }
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${total} ${total}" shape-rendering="crispEdges">`
+      + `<rect width="${total}" height="${total}" fill="${lightEl.value}"/>`
+      + `<path d="${path}" fill="${darkEl.value}"/></svg>`;
+  }
+
+  function download(href, name) {
+    const a = document.createElement('a');
+    a.href = href;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
+  $('qr-png').addEventListener('click', () => {
+    if (!model) return;
+    download(canvas.toDataURL('image/png'), 'qrcode.png');
+  });
+  $('qr-svg').addEventListener('click', () => {
+    if (!model) return;
+    const blob = new Blob([svgString()], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    download(url, 'qrcode.svg');
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  });
+
+  // Text/level changes rebuild the model (debounced); size/margin/color only redraw.
+  let t;
+  textEl.addEventListener('input', () => { clearTimeout(t); t = setTimeout(build, 150); });
+  eclEl.addEventListener('change', build);
+  for (const el of [sizeEl, marginEl, darkEl, lightEl]) {
+    el.addEventListener('input', () => { if (model) draw(); });
+  }
+
+  build();
+</script>
