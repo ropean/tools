@@ -7,199 +7,270 @@ const tool = TOOLS.find((t) => t.id === 'world-clock');
 <ToolLayout tool={tool}>
   <div class="wc">
     <div class="wc-bar">
-      <div class="wc-add">
-        <input type="text" class="field" id="wc-input" list="wc-zones" placeholder="Add a time zone, e.g. Asia/Shanghai" autocomplete="off" />
-        <datalist id="wc-zones"></datalist>
-        <button type="button" class="btn btn-primary" id="wc-add">Add</button>
-        <button type="button" class="btn" id="wc-add-local">Add my time zone</button>
+      <div class="wc-combo" id="wc-combo">
+        <input type="text" class="field" id="wc-input" role="combobox" aria-expanded="false" aria-autocomplete="list" placeholder="Add a clock — type an offset like +6 or -5" autocomplete="off" />
+        <div class="wc-options" id="wc-options" role="listbox" hidden></div>
       </div>
       <label class="wc-toggle"><input type="checkbox" id="wc-hour12" /> 12-hour</label>
     </div>
 
     <div class="wc-grid" id="wc-grid"></div>
-    <p class="wc-empty" id="wc-empty" hidden>No clocks yet. Add a time zone above.</p>
+    <p class="wc-empty" id="wc-empty" hidden>No clocks yet. Add a UTC offset above.</p>
   </div>
 </ToolLayout>
 
 <style>
-  .wc { display: flex; flex-direction: column; gap: 18px; }
+  .wc { display: flex; flex-direction: column; gap: 20px; }
   .wc-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
-  .wc-add { display: flex; flex-wrap: wrap; gap: 8px; flex: 1 1 auto; }
-  .wc-add .field { flex: 1 1 240px; min-width: 200px; }
   .wc-toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: var(--muted); white-space: nowrap; }
 
-  .wc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+  /* Searchable dropdown */
+  .wc-combo { position: relative; flex: 1 1 320px; min-width: 240px; max-width: 420px; }
+  .wc-options {
+    position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 30;
+    max-height: 280px; overflow-y: auto;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); box-shadow: rgba(0, 0, 0, 0.1) 0 4px 12px;
+    padding: 6px;
+  }
+  .wc-opt {
+    display: flex; align-items: baseline; gap: 10px;
+    width: 100%; text-align: left; cursor: pointer;
+    background: transparent; border: none; border-radius: var(--radius);
+    padding: 9px 12px; font-size: 14px; color: var(--fg); font-family: var(--mono);
+  }
+  .wc-opt:hover, .wc-opt.active { background: var(--subtle); }
+  .wc-opt .ex { color: var(--muted); font-family: var(--font); font-size: 12px; margin-left: auto; }
+  .wc-none { padding: 12px; color: var(--muted); font-size: 13px; text-align: center; }
+
+  /* Clock cards */
+  .wc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 16px; }
   .wc-card {
     position: relative;
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
-    background: var(--bg);
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
+    background: linear-gradient(180deg, var(--bg), var(--subtle-2));
+    padding: 18px 20px 20px;
+    transition: border-color 0.15s ease, transform 0.15s ease;
   }
-  .wc-zone { font-size: 14px; font-weight: 600; padding-right: 24px; }
-  .wc-offset { font-size: 12px; color: var(--muted); }
-  .wc-time { font-family: var(--mono); font-size: 34px; font-weight: 600; letter-spacing: -0.02em; margin: 6px 0 2px; font-variant-numeric: tabular-nums; }
-  .wc-date { font-size: 13px; color: var(--muted); }
+  .wc-card:hover { border-color: var(--border-strong); transform: translateY(-2px); }
+  .wc-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .wc-badge {
+    font-family: var(--mono); font-size: 12px; font-weight: 600;
+    color: var(--fg); background: var(--subtle);
+    border: 1px solid var(--border); border-radius: 9999px; padding: 3px 10px;
+  }
   .wc-remove {
-    position: absolute; top: 12px; right: 12px;
     width: 24px; height: 24px; border-radius: 6px;
     border: none; background: transparent; color: var(--muted);
     cursor: pointer; font-size: 16px; line-height: 1;
+    opacity: 0; transition: opacity 0.15s ease;
   }
+  .wc-card:hover .wc-remove, .wc-remove:focus { opacity: 1; }
   .wc-remove:hover { background: var(--subtle); color: var(--fg); }
-  .wc-empty { text-align: center; color: var(--muted); padding: 48px 24px; margin: 0; }
+  .wc-time {
+    font-family: var(--mono); font-weight: 600;
+    font-size: clamp(30px, 6vw, 38px); line-height: 1.05; letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums; display: flex; align-items: baseline; gap: 6px;
+  }
+  .wc-ampm { font-size: 14px; font-weight: 500; color: var(--muted); }
+  .wc-date { font-size: 13px; color: var(--muted); margin-top: 8px; }
+  .wc-empty { text-align: center; color: var(--muted); padding: 56px 24px; margin: 0; border: 1px dashed var(--border); border-radius: var(--radius-lg); }
 </style>
 
 <script>
-  // World Clock — live clocks for chosen time zones, persisted in localStorage.
-  const KEY = 'world-clock.v1';
-  const grid = document.getElementById('wc-grid');
-  const emptyEl = document.getElementById('wc-empty');
-  const input = document.getElementById('wc-input');
-  const hour12El = document.getElementById('wc-hour12');
+  // World Clock — live clocks for fixed UTC offsets, saved in localStorage.
+  // Offsets are DST-free by design (a clock is just "UTC + N minutes").
+  const KEY = 'world-clock.v2';
 
-  // { zones: string[], hour12: boolean }
+  // Real-world UTC offsets in minutes, from -12:00 to +14:00.
+  const OFFSETS = [
+    -720, -660, -600, -570, -540, -480, -420, -360, -300, -240, -210, -180,
+    -120, -60, 0, 60, 120, 180, 210, 240, 270, 300, 330, 345, 360, 390, 420,
+    480, 525, 540, 570, 600, 630, 660, 720, 765, 780, 840,
+  ];
+
+  const $ = (id) => document.getElementById(id);
+  const grid = $('wc-grid');
+  const emptyEl = $('wc-empty');
+  const input = $('wc-input');
+  const optionsEl = $('wc-options');
+  const hour12El = $('wc-hour12');
+
+  // { offsets: number[] (minutes), hour12: boolean }
   let state = load();
 
   function load() {
     try {
-      const raw = localStorage.getItem(KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed.zones)) return { zones: parsed.zones, hour12: !!parsed.hour12 };
-      }
-    } catch { /* ignore corrupt storage */ }
-    return { zones: ['UTC'], hour12: false }; // default: UTC only
+      const p = JSON.parse(localStorage.getItem(KEY) || '');
+      if (p && Array.isArray(p.offsets)) return { offsets: p.offsets, hour12: !!p.hour12 };
+    } catch { /* ignore */ }
+    return { offsets: [0], hour12: false }; // default: UTC
   }
-
   function save() {
-    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch { /* quota/private mode */ }
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch { /* private mode */ }
   }
 
-  function isValidZone(z) {
-    try { new Intl.DateTimeFormat('en', { timeZone: z }); return true; } catch { return false; }
+  function label(min) {
+    if (min === 0) return 'UTC';
+    const sign = min < 0 ? '−' : '+';
+    const a = Math.abs(min), h = Math.floor(a / 60), m = a % 60;
+    return 'UTC' + sign + h + (m ? ':' + String(m).padStart(2, '0') : '');
+  }
+  // Plain-ASCII search text (uses '-' not '−') so typing "-5" matches.
+  function searchText(min) {
+    if (min === 0) return 'utc utc+0 0';
+    const sign = min < 0 ? '-' : '+';
+    const a = Math.abs(min), h = Math.floor(a / 60), m = a % 60;
+    return ('utc' + sign + h + (m ? ':' + String(m).padStart(2, '0') : '')).toLowerCase();
   }
 
-  // Populate the datalist with all IANA zones the runtime knows.
-  function allZones() {
-    if (typeof Intl.supportedValuesOf === 'function') {
-      try { return Intl.supportedValuesOf('timeZone'); } catch { /* fall through */ }
+  // --- searchable dropdown ---
+  let visible = [];   // currently shown offset list
+  let active = -1;    // highlighted index
+
+  function openList() { renderList(input.value); optionsEl.hidden = false; input.setAttribute('aria-expanded', 'true'); }
+  function closeList() { optionsEl.hidden = true; input.setAttribute('aria-expanded', 'false'); active = -1; }
+
+  function renderList(q) {
+    const qq = q.trim().toLowerCase().replace('−', '-');
+    visible = OFFSETS.filter((min) => !state.offsets.includes(min) && (qq === '' || searchText(min).includes(qq)));
+    active = visible.length ? 0 : -1;
+    optionsEl.textContent = '';
+    if (!visible.length) {
+      const none = document.createElement('div');
+      none.className = 'wc-none';
+      none.textContent = 'No matching offset.';
+      optionsEl.appendChild(none);
+      return;
     }
-    return ['UTC', 'America/New_York', 'America/Los_Angeles', 'America/Chicago',
-      'Europe/London', 'Europe/Paris', 'Europe/Berlin', 'Europe/Moscow',
-      'Asia/Shanghai', 'Asia/Hong_Kong', 'Asia/Tokyo', 'Asia/Singapore',
-      'Asia/Kolkata', 'Asia/Dubai', 'Australia/Sydney'];
+    visible.forEach((min, i) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'wc-opt' + (i === active ? ' active' : '');
+      b.setAttribute('role', 'option');
+      const name = document.createElement('span');
+      name.textContent = label(min);
+      b.appendChild(name);
+      b.addEventListener('mousedown', (e) => { e.preventDefault(); addOffset(min); });
+      optionsEl.appendChild(b);
+    });
   }
 
-  const dl = document.getElementById('wc-zones');
-  for (const z of allZones()) {
-    const opt = document.createElement('option');
-    opt.value = z;
-    dl.appendChild(opt);
+  function setActive(i) {
+    const btns = optionsEl.querySelectorAll('.wc-opt');
+    if (!btns.length) return;
+    active = (i + btns.length) % btns.length;
+    btns.forEach((b, idx) => b.classList.toggle('active', idx === active));
+    btns[active].scrollIntoView({ block: 'nearest' });
   }
 
-  // Cache Intl formatters per zone (rebuilt when the 12/24h option changes).
-  let timeFmt = new Map();
-  let dateFmt = new Map();
-  let offsetFmt = new Map();
-  function resetFormatters() { timeFmt.clear(); dateFmt.clear(); offsetFmt.clear(); }
+  input.addEventListener('focus', openList);
+  input.addEventListener('input', () => { openList(); });
+  input.addEventListener('keydown', (e) => {
+    if (optionsEl.hidden && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) { openList(); return; }
+    if (e.key === 'ArrowDown') { e.preventDefault(); setActive(active + 1); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setActive(active - 1); }
+    else if (e.key === 'Enter') { e.preventDefault(); if (active >= 0 && visible[active] !== undefined) addOffset(visible[active]); }
+    else if (e.key === 'Escape') { closeList(); }
+  });
+  document.addEventListener('click', (e) => {
+    if (!$('wc-combo').contains(e.target)) closeList();
+  });
 
-  function fmt(cache, zone, opts) {
-    let f = cache.get(zone);
-    if (!f) { f = new Intl.DateTimeFormat('en-GB', { timeZone: zone, ...opts }); cache.set(zone, f); }
-    return f;
+  // --- formatters (all in UTC; the offset is baked into the Date we pass) ---
+  let timeFmt, dateFmt;
+  function buildFormatters() {
+    timeFmt = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'UTC', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: state.hour12,
+    });
+    dateFmt = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric',
+    });
   }
+  buildFormatters();
 
-  function offsetOf(zone, now) {
-    const f = fmt(offsetFmt, zone, { timeZoneName: 'shortOffset', hour: '2-digit' });
-    const part = f.formatToParts(now).find((p) => p.type === 'timeZoneName');
-    return part ? part.value : '';
-  }
-
-  // Map of zone -> { timeEl, dateEl } so ticks only touch text, not the DOM tree.
-  let refs = new Map();
+  // --- clock cards ---
+  let refs = new Map(); // offset -> { timeEl, ampmEl, dateEl }
 
   function renderCards() {
     grid.textContent = '';
     refs = new Map();
-    emptyEl.hidden = state.zones.length > 0;
+    emptyEl.hidden = state.offsets.length > 0;
 
-    for (const zone of state.zones) {
+    for (const min of state.offsets) {
       const card = document.createElement('div');
       card.className = 'wc-card';
 
+      const top = document.createElement('div');
+      top.className = 'wc-card-top';
+      const badge = document.createElement('span');
+      badge.className = 'wc-badge';
+      badge.textContent = label(min);
       const remove = document.createElement('button');
       remove.type = 'button';
       remove.className = 'wc-remove';
-      remove.setAttribute('aria-label', 'Remove ' + zone);
+      remove.setAttribute('aria-label', 'Remove ' + label(min));
       remove.textContent = '×';
-      remove.addEventListener('click', () => removeZone(zone));
-
-      const zoneEl = document.createElement('div');
-      zoneEl.className = 'wc-zone';
-      zoneEl.textContent = zone.replace(/_/g, ' ');
-
-      const offsetEl = document.createElement('div');
-      offsetEl.className = 'wc-offset';
+      remove.addEventListener('click', () => removeOffset(min));
+      top.append(badge, remove);
 
       const timeEl = document.createElement('div');
       timeEl.className = 'wc-time';
+      const hhmmss = document.createElement('span');
+      const ampmEl = document.createElement('span');
+      ampmEl.className = 'wc-ampm';
+      timeEl.append(hhmmss, ampmEl);
 
       const dateEl = document.createElement('div');
       dateEl.className = 'wc-date';
 
-      card.append(remove, zoneEl, offsetEl, timeEl, dateEl);
+      card.append(top, timeEl, dateEl);
       grid.appendChild(card);
-      refs.set(zone, { timeEl, dateEl, offsetEl });
+      refs.set(min, { hhmmss, ampmEl, dateEl });
     }
     tick();
   }
 
   function tick() {
-    const now = new Date();
-    for (const [zone, r] of refs) {
-      r.timeEl.textContent = fmt(timeFmt, zone, {
-        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: state.hour12,
-      }).format(now);
-      r.dateEl.textContent = fmt(dateFmt, zone, {
-        weekday: 'short', year: 'numeric', month: 'short', day: 'numeric',
-      }).format(now);
-      r.offsetEl.textContent = offsetOf(zone, now);
+    const nowMs = Date.now();
+    for (const [min, r] of refs) {
+      const d = new Date(nowMs + min * 60000);
+      if (state.hour12) {
+        const parts = timeFmt.formatToParts(d);
+        const t = parts.filter((p) => p.type !== 'dayPeriod').map((p) => p.value).join('').trim();
+        const ap = parts.find((p) => p.type === 'dayPeriod');
+        r.hhmmss.textContent = t;
+        r.ampmEl.textContent = ap ? ap.value.toUpperCase() : '';
+      } else {
+        r.hhmmss.textContent = timeFmt.format(d);
+        r.ampmEl.textContent = '';
+      }
+      r.dateEl.textContent = dateFmt.format(d);
     }
   }
 
-  function addZone(zone) {
-    zone = (zone || '').trim();
-    if (!zone) return;
-    if (!isValidZone(zone)) { input.setCustomValidity('Unknown time zone'); input.reportValidity(); return; }
-    input.setCustomValidity('');
-    if (!state.zones.includes(zone)) {
-      state.zones.push(zone);
+  function addOffset(min) {
+    if (!state.offsets.includes(min)) {
+      state.offsets.push(min);
+      state.offsets.sort((a, b) => a - b);
       save();
       renderCards();
     }
     input.value = '';
+    closeList();
   }
-
-  function removeZone(zone) {
-    state.zones = state.zones.filter((z) => z !== zone);
+  function removeOffset(min) {
+    state.offsets = state.offsets.filter((x) => x !== min);
     save();
     renderCards();
   }
 
-  document.getElementById('wc-add').addEventListener('click', () => addZone(input.value));
-  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addZone(input.value); } });
-  document.getElementById('wc-add-local').addEventListener('click', () => {
-    addZone(Intl.DateTimeFormat().resolvedOptions().timeZone);
-  });
   hour12El.checked = state.hour12;
   hour12El.addEventListener('change', () => {
     state.hour12 = hour12El.checked;
     save();
-    resetFormatters();
+    buildFormatters();
     tick();
   });
 
