@@ -13,7 +13,6 @@ const { current } = Astro.props;
     <nav class="nav-desktop">
       <a class="nav-link" href="/" aria-current={current === 'home' ? 'page' : undefined}>Home</a>
       <a class="nav-link" href="/about.html" aria-current={current === 'about' ? 'page' : undefined}>About</a>
-      <a class="btn" href="mailto:hello@qingtools.app">Suggest a tool</a>
     </nav>
 
     <button type="button" class="hamburger" aria-label="Menu" aria-expanded="false" data-menu-toggle>
@@ -24,7 +23,6 @@ const { current } = Astro.props;
   <div class="nav-mobile" data-menu>
     <a class="nav-link" href="/">Home</a>
     <a class="nav-link" href="/about.html">About</a>
-    <a class="nav-link" href="mailto:hello@qingtools.app">Suggest a tool</a>
   </div>
 </header>
 
