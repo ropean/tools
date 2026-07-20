@@ -62,9 +62,10 @@ export const TOOLS = [
 ];
 
 // The link target for a tool card / switcher entry: the external URL for
-// off-site tools, otherwise a root-level page per tool.
+// off-site tools, otherwise an extensionless root path (Cloudflare Pages serves
+// <id>.html at /<id> and redirects the .html form).
 export function toolHref(tool) {
-  return tool.external ?? `/${tool.id}.html`;
+  return tool.external ?? `/${tool.id}`;
 }
 
 export function categoryLabel(key) {
