@@ -14,7 +14,7 @@ const tool = TOOLS.find((t) => t.id === 'qr-generator');
     <div class="qr-panel" id="qr-panel-generate">
       <div class="qr-field">
         <label class="qr-label" for="qr-text">Text or URL</label>
-        <textarea class="field mono" id="qr-text" rows="4" spellcheck="false" placeholder="https://tools.ropean.org">https://tools.ropean.org</textarea>
+        <textarea class="field mono" id="qr-text" rows="10" spellcheck="false" placeholder="https://tools.ropean.org">https://tools.ropean.org</textarea>
       </div>
 
       <div class="qr-row">
@@ -78,7 +78,7 @@ const tool = TOOLS.find((t) => t.id === 'qr-generator');
 
       <div class="qr-field">
         <label class="qr-label" for="qr-decode-out">Decoded text</label>
-        <textarea class="field mono" id="qr-decode-out" rows="4" spellcheck="false" readonly placeholder="Decoded text will appear here"></textarea>
+        <textarea class="field mono" id="qr-decode-out" rows="10" spellcheck="false" readonly placeholder="Decoded text will appear here"></textarea>
       </div>
       <div class="qr-actions">
         <button type="button" class="btn btn-copy" id="qr-decode-copy">Copy</button>

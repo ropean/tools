@@ -23,9 +23,9 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "astro": "^7.1.2",
-    "jsqr": "^1.4.0",
-    "marked": "^18.0.6",
-    "qrcode-generator": "^2.0.4"
+    "astro": "7.1.2",
+    "jsqr": "1.4.0",
+    "marked": "18.0.6",
+    "qrcode-generator": "2.0.4"
   }
 }
