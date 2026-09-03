@@ -29,7 +29,7 @@ export const CATEGORIES = [
 export const TOOLS = [
   // --- Live tools (native Astro pages under src/pages/) ---
   { id: 'random-string-generator', category: 'util', name: 'Random String Generator', desc: 'Generate random strings, tokens and passwords.', icon: 'shuffle', ready: true },
-  { id: 'qr-generator', category: 'util', name: 'QR Code Generator', desc: 'Generate a QR code from text or a link.', icon: 'qr', ready: true },
+  { id: 'qr-generator', category: 'util', name: 'QR Code Generator', desc: 'Generate a QR code from text, or decode one from an image.', icon: 'qr', ready: true },
   { id: 'world-clock', category: 'util', name: 'World Clock', desc: 'Track current times worldwide with your own saved clocks.', icon: 'clock', ready: true },
   { id: 'json-tree-viewer', category: 'text', name: 'JSON Tree Viewer', desc: 'Explore JSON as a tree and filter nodes by keyword.', icon: 'braces', ready: true },
   { id: 'markdown-to-html', category: 'text', name: 'Markdown to HTML', desc: 'Convert Markdown to HTML with a live preview.', icon: 'code', ready: true },

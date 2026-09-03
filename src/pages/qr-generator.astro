@@ -6,7 +6,12 @@ const tool = TOOLS.find((t) => t.id === 'qr-generator');
 ---
 <ToolLayout tool={tool}>
   <div class="qr">
-    <div class="qr-controls">
+    <div class="qr-tabs" role="tablist">
+      <button type="button" class="qr-tab active" id="qr-tab-generate" role="tab" aria-selected="true">Generate</button>
+      <button type="button" class="qr-tab" id="qr-tab-decode" role="tab" aria-selected="false">Decode</button>
+    </div>
+
+    <div class="qr-panel" id="qr-panel-generate">
       <div class="qr-field">
         <label class="qr-label" for="qr-text">Text or URL</label>
         <textarea class="field mono" id="qr-text" rows="4" spellcheck="false" placeholder="https://tools.ropean.org">https://tools.ropean.org</textarea>
@@ -44,23 +49,53 @@ const tool = TOOLS.find((t) => t.id === 'qr-generator');
       </div>
 
       <p class="qr-msg" id="qr-msg" hidden></p>
+
+      <div class="qr-preview">
+        <div class="qr-canvas-wrap">
+          <canvas id="qr-canvas" width="320" height="320" aria-label="QR code preview"></canvas>
+        </div>
+        <div class="qr-actions">
+          <button type="button" class="btn btn-primary" id="qr-png">Download PNG</button>
+          <button type="button" class="btn" id="qr-svg">Download SVG</button>
+        </div>
+      </div>
     </div>
 
-    <div class="qr-preview">
-      <div class="qr-canvas-wrap">
-        <canvas id="qr-canvas" width="320" height="320" aria-label="QR code preview"></canvas>
+    <div class="qr-panel" id="qr-panel-decode" hidden>
+      <div class="qr-field">
+        <label class="qr-label" for="qr-drop">Source image</label>
+        <div class="qr-drop" id="qr-drop" tabindex="0" role="button" aria-label="Upload, drag & drop, or paste an image to decode">
+          <p class="qr-drop-text">Click to upload, drag &amp; drop an image, or paste (Ctrl/Cmd+V)</p>
+          <input type="file" id="qr-file" accept="image/*" hidden />
+        </div>
+      </div>
+
+      <div class="qr-decode-preview" id="qr-decode-preview" hidden>
+        <img id="qr-decode-img" alt="Uploaded image" />
+      </div>
+
+      <p class="qr-msg" id="qr-decode-msg" hidden></p>
+
+      <div class="qr-field">
+        <label class="qr-label" for="qr-decode-out">Decoded text</label>
+        <textarea class="field mono" id="qr-decode-out" rows="4" spellcheck="false" readonly placeholder="Decoded text will appear here"></textarea>
       </div>
       <div class="qr-actions">
-        <button type="button" class="btn btn-primary" id="qr-png">Download PNG</button>
-        <button type="button" class="btn" id="qr-svg">Download SVG</button>
+        <button type="button" class="btn btn-copy" id="qr-decode-copy">Copy</button>
       </div>
     </div>
   </div>
 </ToolLayout>
 
 <style>
-  .qr { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; }
-  .qr-controls { flex: 1 1 300px; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+  .qr { display: flex; flex-direction: column; gap: 20px; }
+
+  .qr-tabs { display: inline-flex; align-self: flex-start; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .qr-tab { background: transparent; border: none; padding: 7px 16px; font-size: 13px; color: var(--muted); cursor: pointer; }
+  .qr-tab.active { background: var(--dark); color: var(--on-dark); }
+
+  .qr-panel { display: flex; flex-direction: column; gap: 16px; }
+
   .qr-field { display: flex; flex-direction: column; gap: 6px; }
   .qr-label { font-size: 12px; color: var(--muted); }
   .qr-row { display: flex; flex-wrap: wrap; gap: 12px; }
@@ -72,9 +107,10 @@ const tool = TOOLS.find((t) => t.id === 'qr-generator');
   }
   .qr-msg { margin: 0; font-size: 13px; color: var(--error); }
 
-  .qr-preview { flex: 1 1 300px; display: flex; flex-direction: column; gap: 16px; align-items: center; }
+  .qr-preview { display: flex; flex-direction: column; gap: 16px; align-items: center; }
   .qr-canvas-wrap {
     width: 100%;
+    max-width: 420px;
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     background: var(--subtle-2);
@@ -85,12 +121,49 @@ const tool = TOOLS.find((t) => t.id === 'qr-generator');
   }
   #qr-canvas { max-width: 100%; height: auto; image-rendering: pixelated; border-radius: 4px; }
   .qr-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+
+  .qr-drop {
+    display: flex; align-items: center; justify-content: center; text-align: center;
+    min-height: 140px; padding: 24px;
+    border: 1px dashed var(--border-strong); border-radius: var(--radius-lg);
+    background: var(--subtle-2); cursor: pointer;
+  }
+  .qr-drop.qr-drop-active { border-color: var(--fg); background: var(--subtle); }
+  .qr-drop-text { margin: 0; font-size: 13px; color: var(--muted); }
+
+  .qr-decode-preview {
+    display: flex; justify-content: center;
+    border: 1px solid var(--border); border-radius: var(--radius-lg);
+    background: var(--subtle-2); padding: 16px;
+  }
+  .qr-decode-preview img { max-width: 100%; max-height: 320px; border-radius: 4px; }
 </style>
 
 <script>
   import qrcode from 'qrcode-generator';
+  import jsQR from 'jsqr';
 
   const $ = (id) => document.getElementById(id);
+
+  // ---- Tabs ----
+  const tabGenerate = $('qr-tab-generate');
+  const tabDecode = $('qr-tab-decode');
+  const panelGenerate = $('qr-panel-generate');
+  const panelDecode = $('qr-panel-decode');
+
+  function showTab(which) {
+    const generate = which === 'generate';
+    panelGenerate.hidden = !generate;
+    panelDecode.hidden = generate;
+    tabGenerate.classList.toggle('active', generate);
+    tabDecode.classList.toggle('active', !generate);
+    tabGenerate.setAttribute('aria-selected', String(generate));
+    tabDecode.setAttribute('aria-selected', String(!generate));
+  }
+  tabGenerate.addEventListener('click', () => showTab('generate'));
+  tabDecode.addEventListener('click', () => showTab('decode'));
+
+  // ---- Generate ----
   const textEl = $('qr-text');
   const eclEl = $('qr-ecl');
   const sizeEl = $('qr-size');
@@ -192,4 +265,93 @@ const tool = TOOLS.find((t) => t.id === 'qr-generator');
   }
 
   build();
+
+  // ---- Decode ----
+  const dropEl = $('qr-drop');
+  const fileEl = $('qr-file');
+  const decodePreview = $('qr-decode-preview');
+  const decodeImg = $('qr-decode-img');
+  const decodeMsg = $('qr-decode-msg');
+  const decodeOut = $('qr-decode-out');
+  const decodeCopy = $('qr-decode-copy');
+  const decodeCanvas = document.createElement('canvas');
+  const decodeCtx = decodeCanvas.getContext('2d', { willReadFrequently: true });
+
+  function setDecodeMsg(text) {
+    if (!text) { decodeMsg.hidden = true; decodeMsg.textContent = ''; return; }
+    decodeMsg.hidden = false;
+    decodeMsg.textContent = text;
+  }
+
+  function decodeImage(img) {
+    decodeCanvas.width = img.naturalWidth;
+    decodeCanvas.height = img.naturalHeight;
+    decodeCtx.drawImage(img, 0, 0);
+    const imageData = decodeCtx.getImageData(0, 0, decodeCanvas.width, decodeCanvas.height);
+    const code = jsQR(imageData.data, imageData.width, imageData.height);
+    if (code && code.data) {
+      decodeOut.value = code.data;
+      setDecodeMsg('');
+    } else {
+      decodeOut.value = '';
+      setDecodeMsg('No QR code found in this image.');
+    }
+  }
+
+  function handleFile(file) {
+    if (!file || !file.type.startsWith('image/')) {
+      setDecodeMsg('Please provide an image file.');
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    decodeImg.onload = () => {
+      decodePreview.hidden = false;
+      decodeImage(decodeImg);
+      URL.revokeObjectURL(url);
+    };
+    decodeImg.onerror = () => {
+      setDecodeMsg('Could not load that image.');
+      URL.revokeObjectURL(url);
+    };
+    decodeImg.src = url;
+  }
+
+  dropEl.addEventListener('click', () => fileEl.click());
+  dropEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileEl.click(); }
+  });
+  fileEl.addEventListener('change', () => {
+    if (fileEl.files && fileEl.files[0]) handleFile(fileEl.files[0]);
+  });
+
+  for (const evt of ['dragenter', 'dragover']) {
+    dropEl.addEventListener(evt, (e) => { e.preventDefault(); dropEl.classList.add('qr-drop-active'); });
+  }
+  for (const evt of ['dragleave', 'drop']) {
+    dropEl.addEventListener(evt, (e) => { e.preventDefault(); dropEl.classList.remove('qr-drop-active'); });
+  }
+  dropEl.addEventListener('drop', (e) => {
+    const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if (file) handleFile(file);
+  });
+
+  document.addEventListener('paste', (e) => {
+    if (panelDecode.hidden) return;
+    const items = e.clipboardData && e.clipboardData.items;
+    if (!items) return;
+    for (const item of items) {
+      if (item.type && item.type.startsWith('image/')) {
+        const file = item.getAsFile();
+        if (file) { handleFile(file); break; }
+      }
+    }
+  });
+
+  decodeCopy.addEventListener('click', async () => {
+    if (!decodeOut.value) return;
+    await navigator.clipboard.writeText(decodeOut.value);
+    const prev = decodeCopy.textContent;
+    decodeCopy.textContent = 'Copied';
+    setTimeout(() => { decodeCopy.textContent = prev; }, 1200);
+  });
 </script>
