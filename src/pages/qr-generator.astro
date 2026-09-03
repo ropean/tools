@@ -283,12 +283,70 @@ const tool = TOOLS.find((t) => t.id === 'qr-generator');
     decodeMsg.textContent = text;
   }
 
+  // jsQR binarizes on standard luma, which can flatten low-contrast colors
+  // (e.g. pure yellow vs. white differ by only ~29/255 in luma). As a
+  // fallback, try each single RGB channel with contrast stretched to full
+  // range — one channel usually separates foreground from background even
+  // when luma can't.
+  function extractChannel(data, width, height, channel) {
+    const n = width * height;
+    const out = new Uint8ClampedArray(n);
+    for (let i = 0; i < n; i++) {
+      const o = i * 4;
+      out[i] = channel(data[o], data[o + 1], data[o + 2]);
+    }
+    return out;
+  }
+
+  function stretchContrast(values) {
+    let min = 255, max = 0;
+    for (const v of values) {
+      if (v < min) min = v;
+      if (v > max) max = v;
+    }
+    const range = max - min;
+    if (range < 8) return null; // effectively flat, not worth trying
+    const scale = 255 / range;
+    const out = new Uint8ClampedArray(values.length);
+    for (let i = 0; i < values.length; i++) out[i] = (values[i] - min) * scale;
+    return out;
+  }
+
+  function grayscaleImageData(width, height, values) {
+    const out = new Uint8ClampedArray(width * height * 4);
+    for (let i = 0; i < values.length; i++) {
+      const v = values[i];
+      const o = i * 4;
+      out[o] = v; out[o + 1] = v; out[o + 2] = v; out[o + 3] = 255;
+    }
+    return new ImageData(out, width, height);
+  }
+
+  const DECODE_CHANNELS = [
+    (r, g, b) => 0.299 * r + 0.587 * g + 0.114 * b, // luma
+    (r) => r,
+    (_r, g) => g,
+    (_r, _g, b) => b,
+  ];
+
   function decodeImage(img) {
     decodeCanvas.width = img.naturalWidth;
     decodeCanvas.height = img.naturalHeight;
     decodeCtx.drawImage(img, 0, 0);
-    const imageData = decodeCtx.getImageData(0, 0, decodeCanvas.width, decodeCanvas.height);
-    const code = jsQR(imageData.data, imageData.width, imageData.height);
+    const { width, height } = decodeCanvas;
+    const imageData = decodeCtx.getImageData(0, 0, width, height);
+
+    let code = jsQR(imageData.data, imageData.width, imageData.height);
+
+    if (!code || !code.data) {
+      for (const channel of DECODE_CHANNELS) {
+        const stretched = stretchContrast(extractChannel(imageData.data, width, height, channel));
+        if (!stretched) continue;
+        code = jsQR(grayscaleImageData(width, height, stretched).data, width, height);
+        if (code && code.data) break;
+      }
+    }
+
     if (code && code.data) {
       decodeOut.value = code.data;
       setDecodeMsg('');
