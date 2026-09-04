@@ -1,0 +1,277 @@
+---
+import ToolLayout from '../layouts/ToolLayout.astro';
+import { TOOLS } from '../data/tools.js';
+
+const tool = TOOLS.find((t) => t.id === 'domain-to-ip');
+---
+<ToolLayout tool={tool}>
+  <div class="d2i">
+    <p class="d2i-subtitle">Resolve one or more domains to their IPv4 and IPv6 addresses using a public DNS-over-HTTPS resolver.</p>
+
+    <div class="d2i-field">
+      <label class="d2i-label" for="d2i-input">Domains <span class="d2i-hint">(one per line, or comma-separated)</span></label>
+      <textarea class="field mono" id="d2i-input" rows="6" spellcheck="false" placeholder="example.com&#10;cloudflare.com, github.com"></textarea>
+    </div>
+
+    <div class="d2i-row">
+      <div class="d2i-field d2i-field-inline">
+        <label class="d2i-label" for="d2i-provider">Resolver</label>
+        <select class="field" id="d2i-provider">
+          <option value="cloudflare">Cloudflare (1.1.1.1)</option>
+          <option value="google">Google (8.8.8.8)</option>
+          <option value="alidns">AliDNS (223.5.5.5)</option>
+        </select>
+      </div>
+
+      <div class="d2i-field d2i-field-inline">
+        <span class="d2i-label">Record types</span>
+        <div class="d2i-checks">
+          <label><input type="checkbox" id="d2i-a" checked /> A (IPv4)</label>
+          <label><input type="checkbox" id="d2i-aaaa" checked /> AAAA (IPv6)</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="d2i-actions">
+      <button type="button" class="btn btn-primary" id="d2i-resolve">Resolve</button>
+      <button type="button" class="btn" id="d2i-clear">Clear</button>
+      <button type="button" class="btn btn-copy" id="d2i-copy">Copy results</button>
+      <span class="d2i-progress" id="d2i-progress"></span>
+    </div>
+
+    <div class="d2i-table-wrap">
+      <table id="d2i-table" hidden>
+        <thead>
+          <tr>
+            <th>Domain</th>
+            <th>IPv4 (A)</th>
+            <th>IPv6 (AAAA)</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="d2i-body"></tbody>
+      </table>
+    </div>
+
+    <p class="d2i-notice">
+      Queries are sent directly from your browser to the selected public resolver over DNS-over-HTTPS
+      (<a href="https://developers.cloudflare.com/1.1.1.1/encryption/dns-over-https/" target="_blank" rel="noopener">DoH</a>);
+      no data passes through this site.
+    </p>
+  </div>
+</ToolLayout>
+
+<style>
+  .d2i { display: flex; flex-direction: column; gap: 16px; max-width: 860px; }
+  .d2i-subtitle { font-size: 14px; color: var(--muted); margin: 0; }
+
+  .d2i-field { display: flex; flex-direction: column; gap: 6px; }
+  .d2i-label { font-size: 12px; color: var(--muted); }
+  .d2i-hint { font-weight: 400; }
+
+  .d2i-row { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-end; }
+  .d2i-field-inline { min-width: 200px; }
+  .d2i-field-inline select { max-width: 260px; }
+  .d2i-checks { display: flex; flex-wrap: wrap; gap: 12px 20px; height: 38px; align-items: center; }
+  .d2i-checks label { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; }
+
+  .d2i-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .d2i-progress { font-size: 13px; color: var(--muted); margin-left: auto; }
+
+  .d2i-notice { font-size: 12px; color: var(--muted); margin: 0; }
+  .d2i-notice a { color: var(--muted); }
+
+  .d2i-table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+  thead th {
+    background: var(--subtle); font-size: 11px; font-weight: 600; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.05em; padding: 10px 14px;
+    text-align: left; border-bottom: 1px solid var(--border);
+  }
+  tbody tr { border-bottom: 1px solid var(--border); }
+  tbody tr:last-child { border-bottom: none; }
+  td { padding: 9px 14px; font-size: 14px; vertical-align: top; }
+  td.domain { font-weight: 600; word-break: break-all; }
+  td.ips { font-family: var(--mono); font-size: 13px; }
+  td.ips span { display: block; }
+  td.ips .empty { color: var(--muted); font-family: inherit; }
+  td.status { white-space: nowrap; font-size: 13px; }
+  .ok { color: #2f7d4f; }
+  .err { color: #9a3b2e; }
+  .pending { color: var(--muted); }
+</style>
+
+<script>
+  const PROVIDERS = {
+    cloudflare: {
+      url: (name, type) => `https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(name)}&type=${type}`,
+      headers: { Accept: 'application/dns-json' },
+    },
+    google: {
+      url: (name, type) => `https://dns.google/resolve?name=${encodeURIComponent(name)}&type=${type}`,
+      headers: {},
+    },
+    alidns: {
+      url: (name, type) => `https://dns.alidns.com/resolve?name=${encodeURIComponent(name)}&type=${type}`,
+      headers: {},
+    },
+  };
+
+  const $ = (id) => document.getElementById(id);
+  const input      = $('d2i-input');
+  const providerEl = $('d2i-provider');
+  const aEl        = $('d2i-a');
+  const aaaaEl      = $('d2i-aaaa');
+  const resolveBtn = $('d2i-resolve');
+  const clearBtn   = $('d2i-clear');
+  const copyBtn    = $('d2i-copy');
+  const progress   = $('d2i-progress');
+  const table      = $('d2i-table');
+  const tbody      = $('d2i-body');
+
+  function parseDomains(text) {
+    const seen = new Set();
+    const result = [];
+    for (const raw of text.split(/[\n,]/)) {
+      let host = raw.trim().replace(/^https?:\/\//i, '').replace(/\/.*$/, '').replace(/\.$/, '');
+      if (!host) continue;
+      host = host.toLowerCase();
+      if (!/^[a-z0-9]([a-z0-9-]{0,62}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,62}[a-z0-9])?)+$/.test(host)) continue;
+      if (seen.has(host)) continue;
+      seen.add(host);
+      result.push(host);
+    }
+    return result;
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  async function queryType(provider, domain, type) {
+    const cfg = PROVIDERS[provider];
+    const res = await fetch(cfg.url(domain, type), { headers: cfg.headers });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+    if (json.Status === 3) return { ips: [], nxdomain: true };
+    if (json.Status !== 0) throw new Error(`DNS status ${json.Status}`);
+    const wantType = type === 'A' ? 1 : 28;
+    const ips = (json.Answer || [])
+      .filter((a) => a.type === wantType)
+      .map((a) => a.data);
+    return { ips, nxdomain: false };
+  }
+
+  async function resolveDomain(domain, provider, wantA, wantAAAA, row) {
+    const ipv4El  = row.querySelector('.ips-v4');
+    const ipv6El  = row.querySelector('.ips-v6');
+    const statusEl = row.querySelector('.status');
+
+    const tasks = [];
+    if (wantA) tasks.push(queryType(provider, domain, 'A').then((r) => ({ kind: 'A', r })).catch((e) => ({ kind: 'A', error: e })));
+    if (wantAAAA) tasks.push(queryType(provider, domain, 'AAAA').then((r) => ({ kind: 'AAAA', r })).catch((e) => ({ kind: 'AAAA', error: e })));
+
+    const outcomes = await Promise.all(tasks);
+
+    let anyOk = false;
+    let anyNx = false;
+    let firstError = null;
+
+    for (const o of outcomes) {
+      if (o.error) {
+        if (!firstError) firstError = o.error;
+        continue;
+      }
+      const target = o.kind === 'A' ? ipv4El : ipv6El;
+      if (o.r.nxdomain) {
+        anyNx = true;
+        target.innerHTML = '<span class="empty">–</span>';
+      } else if (o.r.ips.length === 0) {
+        target.innerHTML = '<span class="empty">–</span>';
+      } else {
+        anyOk = true;
+        target.innerHTML = o.r.ips.map((ip) => `<span>${escHtml(ip)}</span>`).join('');
+      }
+    }
+
+    if (anyOk) {
+      statusEl.textContent = 'OK';
+      statusEl.className = 'status ok';
+    } else if (firstError) {
+      statusEl.textContent = firstError.message.slice(0, 40);
+      statusEl.className = 'status err';
+    } else if (anyNx) {
+      statusEl.textContent = 'NXDOMAIN';
+      statusEl.className = 'status err';
+    } else {
+      statusEl.textContent = 'No records';
+      statusEl.className = 'status err';
+    }
+  }
+
+  function addRow(domain) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="domain">${escHtml(domain)}</td>
+      <td class="ips ips-v4"><span class="pending">…</span></td>
+      <td class="ips ips-v6"><span class="pending">…</span></td>
+      <td class="status pending">…</td>
+    `;
+    tbody.appendChild(tr);
+    return tr;
+  }
+
+  resolveBtn.addEventListener('click', async () => {
+    const domains = parseDomains(input.value);
+    if (domains.length === 0) return;
+    const wantA = aEl.checked;
+    const wantAAAA = aaaaEl.checked;
+    if (!wantA && !wantAAAA) return;
+
+    resolveBtn.disabled = true;
+    tbody.innerHTML = '';
+    table.hidden = false;
+    progress.textContent = `0 / ${domains.length}`;
+
+    const provider = providerEl.value;
+    const rows = domains.map((d) => [d, addRow(d)]);
+
+    let done = 0;
+    const CONCURRENCY = 5;
+    let idx = 0;
+    async function worker() {
+      while (idx < rows.length) {
+        const [domain, row] = rows[idx++];
+        await resolveDomain(domain, provider, wantA, wantAAAA, row);
+        done++;
+        progress.textContent = `${done} / ${domains.length}`;
+      }
+    }
+    await Promise.all(Array.from({ length: CONCURRENCY }, worker));
+
+    resolveBtn.disabled = false;
+    progress.textContent = `Done ${done} / ${domains.length}`;
+  });
+
+  clearBtn.addEventListener('click', () => {
+    input.value = '';
+    tbody.innerHTML = '';
+    table.hidden = true;
+    progress.textContent = '';
+  });
+
+  copyBtn.addEventListener('click', async () => {
+    const rows = [...tbody.querySelectorAll('tr')];
+    if (rows.length === 0) return;
+    const lines = rows.map((tr) => {
+      const domain = tr.querySelector('.domain').textContent;
+      const v4 = [...tr.querySelectorAll('.ips-v4 span')].map((s) => s.textContent).filter((t) => t !== '–').join(', ');
+      const v6 = [...tr.querySelectorAll('.ips-v6 span')].map((s) => s.textContent).filter((t) => t !== '–').join(', ');
+      return `${domain}\tA: ${v4 || '-'}\tAAAA: ${v6 || '-'}`;
+    });
+    await navigator.clipboard.writeText(lines.join('\n'));
+    const prev = copyBtn.textContent;
+    copyBtn.textContent = 'Copied';
+    setTimeout(() => { copyBtn.textContent = prev; }, 1200);
+  });
+</script>

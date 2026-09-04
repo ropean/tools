@@ -34,6 +34,7 @@ export const TOOLS = [
   { id: 'json-tree-viewer', category: 'text', name: 'JSON Tree Viewer', desc: 'Explore JSON as a tree and filter nodes by keyword.', icon: 'braces', ready: true },
   { id: 'markdown-to-html', category: 'text', name: 'Markdown to HTML', desc: 'Convert Markdown to HTML with a live preview.', icon: 'code', ready: true },
   { id: 'dns-checker', category: 'web', name: 'DNS Checker', desc: 'Query and inspect DNS records for any domain.', icon: 'globe', ready: true },
+  { id: 'domain-to-ip', category: 'web', name: 'Domain To IP', desc: 'Resolve domains to IP addresses via public DNS-over-HTTPS resolvers.', icon: 'globe', ready: true },
   { id: 'nginx-config-formatter', category: 'web', name: 'Nginx Config Formatter', desc: 'Format and beautify Nginx configuration files.', icon: 'server', ready: true },
   { id: 'openresty-cors-generator', category: 'web', name: 'OpenResty CORS Generator', desc: 'Generate CORS config snippets for OpenResty and Nginx.', icon: 'shield', ready: true },
   { id: 'redirect-rule-generator', category: 'web', name: 'Redirect Rule Generator', desc: 'Generate www and HTTPS redirect rules for Apache and Nginx.', icon: 'file', ready: true },
