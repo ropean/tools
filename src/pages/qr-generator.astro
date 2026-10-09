@@ -143,6 +143,10 @@ const tool = TOOLS.find((t) => t.id === 'qr-generator');
   import qrcode from 'qrcode-generator';
   import jsQR from 'jsqr';
 
+  // qrcode-generator's default encoder truncates every char to 8 bits, which
+  // corrupts CJK/emoji; encode as UTF-8 so decoders read the text back intact.
+  qrcode.stringToBytes = (s) => Array.from(new TextEncoder().encode(s));
+
   const $ = (id) => document.getElementById(id);
 
   // ---- Tabs ----
@@ -358,37 +362,56 @@ const tool = TOOLS.find((t) => t.id === 'qr-generator');
     (_r, _g, b) => b,
   ];
 
-  function decodeImage(img) {
-    // Pad with white: tightly cropped images lack the quiet zone jsQR needs,
-    // and transparent pixels would otherwise read as black.
-    const pad = Math.round(Math.max(img.naturalWidth, img.naturalHeight) * 0.1);
-    decodeCanvas.width = img.naturalWidth + pad * 2;
-    decodeCanvas.height = img.naturalHeight + pad * 2;
+  const MAX_DECODE_DIM = 1200; // cap work on big photos so the UI stays responsive
+  const MIN_DECODE_DIM = 100;  // below this a downscaled retry cannot resolve modules
+  const RETRY_SCALES = [0.5, 0.35, 0.25]; // dot-style codes often decode once shrunk
+
+  // Draw the image at `scale` onto a white-padded canvas. White padding gives
+  // tightly cropped images the quiet zone jsQR needs, and keeps transparent
+  // pixels from reading as black. SVGs without intrinsic size report 0x0.
+  function render(img, scale) {
+    const w = Math.max(1, Math.round((img.naturalWidth || 1024) * scale));
+    const h = Math.max(1, Math.round((img.naturalHeight || 1024) * scale));
+    const pad = Math.round(Math.max(w, h) * 0.1);
+    decodeCanvas.width = w + pad * 2;
+    decodeCanvas.height = h + pad * 2;
     decodeCtx.fillStyle = '#fff';
     decodeCtx.fillRect(0, 0, decodeCanvas.width, decodeCanvas.height);
-    decodeCtx.drawImage(img, pad, pad);
-    const { width, height } = decodeCanvas;
-    const imageData = decodeCtx.getImageData(0, 0, width, height);
+    decodeCtx.drawImage(img, pad, pad, w, h);
+    return decodeCtx.getImageData(0, 0, decodeCanvas.width, decodeCanvas.height);
+  }
 
-    let code = jsQR(imageData.data, imageData.width, imageData.height);
+  // Lazily yields RGBA candidates from cheapest to most expensive, so easy
+  // images stop at the first jsQR call.
+  function* decodeCandidates(img) {
+    const longest = Math.max(img.naturalWidth || 1024, img.naturalHeight || 1024);
+    const base = Math.min(1, MAX_DECODE_DIM / longest);
+    const full = render(img, base);
+    yield full;
 
-    if (!code || !code.data) {
-      for (const channel of DECODE_CHANNELS) {
-        const stretched = stretchContrast(extractChannel(imageData.data, width, height, channel));
-        if (!stretched) continue;
-        code = jsQR(grayscaleImageData(width, height, stretched).data, width, height);
-        if (code && code.data) break;
-      }
+    for (const s of RETRY_SCALES) {
+      if (longest * base * s < MIN_DECODE_DIM) break;
+      yield render(img, base * s);
     }
 
-    if (!code || !code.data) {
-      const luma = extractChannel(imageData.data, width, height, DECODE_CHANNELS[0]);
-      for (const radius of BLUR_RADII) {
-        const blurred = stretchContrast(boxBlur(luma, width, height, radius));
-        if (!blurred) continue;
-        code = jsQR(grayscaleImageData(width, height, blurred).data, width, height);
-        if (code && code.data) break;
-      }
+    const { width, height } = full;
+    for (const channel of DECODE_CHANNELS) {
+      const stretched = stretchContrast(extractChannel(full.data, width, height, channel));
+      if (stretched) yield grayscaleImageData(width, height, stretched);
+    }
+
+    const luma = extractChannel(full.data, width, height, DECODE_CHANNELS[0]);
+    for (const radius of BLUR_RADII) {
+      const blurred = stretchContrast(boxBlur(luma, width, height, radius));
+      if (blurred) yield grayscaleImageData(width, height, blurred);
+    }
+  }
+
+  function decodeImage(img) {
+    let code = null;
+    for (const candidate of decodeCandidates(img)) {
+      code = jsQR(candidate.data, candidate.width, candidate.height);
+      if (code && code.data) break;
     }
 
     if (code && code.data) {
