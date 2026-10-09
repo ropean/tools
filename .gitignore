@@ -114,3 +114,6 @@ test.js.claude/
 
 # Astro generated
 .astro/
+
+# Playwright MCP debug artifacts
+.playwright-mcp/
